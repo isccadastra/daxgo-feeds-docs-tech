@@ -7,40 +7,40 @@ title: Visão geral
 
 Documentação completa para o time de desenvolvimento do **Daxgo Feeds**, plataforma de gestão e otimização de feeds de produtos.
 
-## 📚 Conteúdo da documentação
+## Conteúdo da documentação
 
-### 🏗️ Backend & API
+### Backend & API
 - [**Estrutura Yii2**](./backend/estrutura-yii2.md) - Arquitetura MVC, controllers, models e components
 - [**Modelos de Dados**](./backend/modelos-dados.md) - Entidades principais e relacionamentos
 - [**Pipeline de Feeds**](./backend/processamento-feeds.md) - Importação, processamento e publicação
 - [**API Endpoints**](./backend/api-endpoints.md) - Referência completa de endpoints REST
 
-### 🎨 Front-end
+### Front-end
 - [**Customizar Feeds**](./frontend/customizar-feeds.md) - Módulo Vue.js de otimização
 - [**Padrões de UI/UX**](./frontend/padroes-ui.md) - Guia de padronização visual
 
-### ⚙️ Infraestrutura
+### Infraestrutura
 - [**Ambiente Local**](./infra/ambiente-local.md) - Setup com Docker Compose
 - [**S3/MinIO**](./infra/s3-minio.md) - Armazenamento de arquivos
 - [**DynamoDB**](./infra/dynamodb.md) - Estrutura de tabelas NoSQL
 - [**Lambda Functions**](./infra/lambda-functions.md) - Processamento assíncrono
 - [**Variáveis de Ambiente**](./infra/variaveis-ambiente.md) - Configurações completas
 
-### 🔌 Integrações
+### Integrações
 - [**Google Merchant**](./integ/google-merchant.md) - Content API for Shopping
 - [**Promoções Google**](./integ/google-merchant-promotions.md) - Módulo de promoções
 - [**TikTok Shop**](./integ/tiktok.md) - Sincronização de produtos
 
-### ✨ Features
+### Features
 - [**Catálogo Inteligente (IA)**](./features/catalogo-inteligente.md) - Otimizações com IA
 - [**Analytics**](./features/analytics.md) - Métricas e relatórios
 - [**Product Studio**](./features/product-studio.md) - Processamento de imagens
 
-### 🛠️ Troubleshooting
+### Troubleshooting
 - [**Xdebug Setup**](./runbooks/xdebug.md) - Configuração de debug PHP
 - [**S3 Troubleshooting**](./runbooks/s3-troubleshooting.md) - Resolução de problemas
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone e configure
 
@@ -66,7 +66,7 @@ docker-compose up -d
 
 Comece pela [**Visão Geral da Arquitetura**](./arquitetura/visao-geral.md).
 
-## 🔗 Repositórios
+## Repositórios
 
 | Repo | Tecnologia | Descrição |
 |------|------------|-----------|
@@ -75,7 +75,7 @@ Comece pela [**Visão Geral da Arquitetura**](./arquitetura/visao-geral.md).
 | `daxgo-feeds-docs` | Docusaurus | Docs de produto |
 | `daxgo-feeds-docs-tech` | Docusaurus | Esta documentação |
 
-## 🛠️ Stack Técnica
+## Stack Técnica
 
 ### Backend
 - **Framework**: Yii2
@@ -99,7 +99,7 @@ Comece pela [**Visão Geral da Arquitetura**](./arquitetura/visao-geral.md).
 - TikTok Shop API
 - AWS Services (S3, DynamoDB, Lambda, SQS, CloudWatch)
 
-## 📊 Arquitetura
+## Arquitetura
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
@@ -113,14 +113,14 @@ Comece pela [**Visão Geral da Arquitetura**](./arquitetura/visao-geral.md).
                             └──────▶ Google Merchant API
 ```
 
-## 📖 Convenções
+## Convenções
 
 - Caminhos de arquivos referenciam os repos `feeds-upgrade` ou `feeds-front-vue`
 - Endpoints são descritos no formato `METHOD /path`
 - Variáveis de ambiente usam o prefixo `DAXGO_ENV_` quando aplicável
 - Cookies e sessões do Yii2 são usados para autenticação
 
-## 🤝 Contribuindo
+## Contribuindo
 
 Ao contribuir:
 
@@ -129,7 +129,7 @@ Ao contribuir:
 3. Teste localmente com Docker
 4. Atualize esta documentação quando necessário
 
-## 📝 Última atualização
+## Última atualização
 
 **Janeiro de 2026** - Documentação completa com todas as features e integrações atuais.
 

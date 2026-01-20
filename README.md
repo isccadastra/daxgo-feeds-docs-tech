@@ -2,7 +2,7 @@
 
 Documentação técnica do **Daxgo Feeds** para o time de desenvolvimento, construída com [Docusaurus](https://docusaurus.io/).
 
-## 📚 Conteúdo
+## Conteúdo
 
 Esta documentação cobre:
 
@@ -14,12 +14,12 @@ Esta documentação cobre:
 - **Features**: Catálogo Inteligente (IA), Analytics, Product Studio
 - **Runbooks**: Troubleshooting e procedimentos operacionais
 
-## 🚀 Requisitos
+## Requisitos
 
 - Node.js 20+
 - npm, yarn ou pnpm
 
-## 📦 Instalação
+## Instalação
 
 ```bash
 npm install
@@ -29,7 +29,7 @@ yarn
 pnpm install
 ```
 
-## 💻 Desenvolvimento local
+## Desenvolvimento local
 
 ```bash
 npm start
@@ -41,7 +41,7 @@ pnpm start
 
 Inicia o servidor de desenvolvimento em http://localhost:3000 com hot reload.
 
-## 🏗️ Build
+## Build
 
 ```bash
 npm run build
@@ -53,7 +53,7 @@ pnpm build
 
 Gera o conteúdo estático em `build/`.
 
-## 🚢 Deploy
+## Deploy
 
 ```bash
 npm run serve
@@ -61,7 +61,7 @@ npm run serve
 
 Serve o build localmente para validação antes do deploy.
 
-## 📁 Estrutura principal
+## Estrutura principal
 
 ```
 daxgo-feeds-docs-tech/
@@ -83,7 +83,7 @@ daxgo-feeds-docs-tech/
 └── README.md                       # Este arquivo
 ```
 
-## 📝 Guia de contribuição
+## Guia de contribuição
 
 ### Estrutura de páginas
 
@@ -122,7 +122,7 @@ Para código do repositório existente, use links ou mencione o arquivo:
 **Arquivo:** `components/FeedImporter.php`
 ```
 
-## 🏷️ Versionamento
+## Versionamento
 
 ### Lançar nova versão (Docusaurus)
 
@@ -166,7 +166,7 @@ git push origin main
 git push origin v1.1.0
 ```
 
-## 🌿 Workflow de branches
+## Workflow de branches
 
 ### Padrão de nomenclatura
 
@@ -189,14 +189,14 @@ git checkout -b feature/adiciona-lambda-docs
 4. Valide build com `npm run build`
 5. Abra Pull Request com descrição clara
 
-## 🔗 Repositórios relacionados
+## Repositórios relacionados
 
 - **Backend**: `feeds-upgrade` (Yii2 + PHP 8.2)
 - **Front-end**: `feeds-front-vue` (Vue.js 2)
 - **Docs de Produto**: `daxgo-feeds-docs`
 - **Docs Técnicas**: `daxgo-feeds-docs-tech` (este repositório)
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Build falha
 
@@ -221,14 +221,14 @@ Reinicie o servidor:
 npm start
 ```
 
-## 📞 Suporte
+## Suporte
 
 Para dúvidas sobre:
 - **Conteúdo técnico**: Time de desenvolvimento
 - **Docusaurus**: [Documentação oficial](https://docusaurus.io/)
 - **Sistema Daxgo Feeds**: Consulte a [documentação de produto](https://docs.daxgo.io)
 
-## 📄 Licença
+## Licença
 
 Copyright © 2026 Daxgo. Todos os direitos reservados.
 
