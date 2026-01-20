@@ -338,7 +338,6 @@ Ao criar ou modificar uma tela, verifique:
 
 ## Referência completa
 
-Para o guia completo com todos os exemplos de código, consulte:
-- [`DOCUMENTACAO_TECNICA_PADRONIZACAO_UI.md`](../../feeds-upgrade/DOCUMENTACAO_TECNICA_PADRONIZACAO_UI.md)
+Para o guia completo com todos os exemplos de código, consulte o arquivo `DOCUMENTACAO_TECNICA_PADRONIZACAO_UI.md` no repositório `feeds-upgrade`.
 
 

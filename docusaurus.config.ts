@@ -42,6 +42,13 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl: undefined,
+          lastVersion: '1.0',
+          versions: {
+            current: {
+              label: 'Em Desenvolvimento',
+              path: 'next',
+            },
+          },
         },
         blog: false,
         theme: {
@@ -75,6 +82,11 @@ const config: Config = {
           sidebarId: 'tutorialSidebar',
           position: 'left',
           label: 'Documentação',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
         },
       ],
     },

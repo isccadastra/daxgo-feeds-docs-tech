@@ -332,7 +332,6 @@ PromotionLog::createErrorLog([
 
 ## Guia completo do usuário
 
-Para instruções detalhadas de uso (não-técnicas), consulte:
-- [`GOOGLE_MERCHANT_PROMOTIONS_GUIDE.md`](../../feeds-upgrade/GOOGLE_MERCHANT_PROMOTIONS_GUIDE.md) (1590 linhas)
+Para instruções detalhadas de uso (não-técnicas), consulte o arquivo `GOOGLE_MERCHANT_PROMOTIONS_GUIDE.md` (1590 linhas) no repositório `feeds-upgrade`.
 
 
