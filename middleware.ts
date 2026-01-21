@@ -1,13 +1,9 @@
-// @ts-ignore
-// @ts-nocheck
-import { NextRequest, NextResponse } from '@vercel/edge';
-
-export function middleware(req: NextRequest) {
+export function middleware(req: Request) {
   const authHeader = req.headers.get('authorization');
 
   // 1. Verifica se o header de autorização existe
   if (!authHeader) {
-    return new NextResponse('Autenticação necessária', {
+    return new Response('Autenticação necessária', {
       status: 401,
       headers: {
         'WWW-Authenticate': 'Basic realm="Acesso Restrito"',
@@ -27,14 +23,17 @@ export function middleware(req: NextRequest) {
     const ADMIN_PASS = process.env.AUTH_PASS || 'admin';
 
     if (user === ADMIN_USER && pwd === ADMIN_PASS) {
-      return NextResponse.next();
+      // Continua com a requisição
+      return new Response(null, {
+        status: 200,
+      });
     }
   } catch (error) {
     console.error('Erro na decodificação auth:', error);
   }
 
   // 4. Retorno caso as credenciais estejam incorretas
-  return new NextResponse('Credenciais Inválidas', {
+  return new Response('Credenciais Inválidas', {
     status: 401,
     headers: {
       'WWW-Authenticate': 'Basic realm="Acesso Restrito"',
