@@ -17,7 +17,7 @@ export default function middleware(req: Request) {
     const pwd     = decoded[1];
 
     const ADMIN_USER = process.env.AUTH_USER || 'daxgo';
-    const ADMIN_PASS = process.env.AUTH_PASS || 'syDPFPPRCT6x2';
+    const ADMIN_PASS = process.env.AUTH_PASS || 'syDPFPPRCT6x';
 
     if (user === ADMIN_USER && pwd === ADMIN_PASS) {
       return;
