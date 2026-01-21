@@ -71,10 +71,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Daxgo Feeds',
       logo: {
         alt: 'Daxgo Feeds',
-        src: 'img/logo.svg',
+        src: 'img/logomail.png',
       },
       items: [
         {
