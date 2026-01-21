@@ -1,4 +1,4 @@
-export function middleware(req: Request) {
+export default function middleware(req: Request) {
   const authHeader = req.headers.get('authorization');
 
   // 1. Verifica se o header de autorização existe
@@ -39,15 +39,14 @@ export function middleware(req: Request) {
   });
 }
 
-// O Matcher garante que o Docusaurus não bloqueie assets vitais
+// O Matcher protege todas as rotas exceto arquivos estáticos
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - assets (arquivos estáticos do Docusaurus)
-     * - img (imagens)
-     * - favicon.ico (favicon file)
+     * Match all request paths except for static files:
+     * - Arquivos com extensões comuns (js, css, png, jpg, etc)
+     * - favicon e robots.txt
      */
-    '/((?!assets/|img/|favicon.ico).*)',
+    '/((?!_next/static|_next/image|assets|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|css|js|woff|woff2|ttf|otf)$).*)',
   ],
 };
