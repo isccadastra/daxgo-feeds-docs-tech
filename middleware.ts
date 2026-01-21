@@ -23,10 +23,8 @@ export function middleware(req: Request) {
     const ADMIN_PASS = process.env.AUTH_PASS || 'admin';
 
     if (user === ADMIN_USER && pwd === ADMIN_PASS) {
-      // Continua com a requisição
-      return new Response(null, {
-        status: 200,
-      });
+      // Continua com a requisição (não retorna nada para passar adiante)
+      return;
     }
   } catch (error) {
     console.error('Erro na decodificação auth:', error);
@@ -46,11 +44,10 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
+     * - assets (arquivos estáticos do Docusaurus)
+     * - img (imagens)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!assets/|img/|favicon.ico).*)',
   ],
 };
