@@ -11,10 +11,10 @@ export default function middleware(req: Request) {
   }
 
   try {
-    const auth    = authHeader.split(' ')[1];
-    const decoded = atob(auth).split(':');
-    const user    = decoded[0];
-    const pwd     = decoded[1];
+    const auth       = authHeader.split(' ')[1];
+    const decoded    = atob(auth).split(':');
+    const user       = decoded[0];
+    const pwd        = decoded[1];
 
     const ADMIN_USER = process.env.AUTH_USER || 'daxgo';
     const ADMIN_PASS = process.env.AUTH_PASS || 'syDPFPPRCT6x';
