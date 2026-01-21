@@ -1,10 +1,17 @@
 ---
 title: API Endpoints • Referência
+description: Referência completa dos endpoints REST da API do Daxgo Feeds
+keywords: [api, rest, endpoints, http, json]
+tags: [backend, api, referência]
 ---
 
 # API Endpoints • Referência
 
 Documentação dos principais endpoints do sistema.
+
+:::info Autenticação
+Todos os endpoints (exceto `/feed/get-data-to-optimize`) exigem autenticação via sessão do Yii2. O CSRF token é obrigatório em requisições POST.
+:::
 
 ## Feed Management
 

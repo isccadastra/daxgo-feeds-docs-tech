@@ -1,10 +1,17 @@
 ---
 title: Analytics e Métricas
+description: Sistema de análise de performance de produtos e feeds via Google Analytics
+keywords: [analytics, métricas, google analytics, performance, dados]
+tags: [features, analytics, métricas]
 ---
 
 # Analytics e Métricas
 
 Sistema de análise de dados de produtos e performance de feeds.
+
+:::tip Google Analytics Data API
+Utiliza a nova Google Analytics Data API (v0.11+) para coletar métricas detalhadas de performance.
+:::
 
 ## Services
 

@@ -1,10 +1,17 @@
 ---
 title: Padrões de UI/UX
+description: Guia de design system e padrões visuais do Daxgo Feeds
+keywords: [ui, ux, design, padrões, bootstrap, cores]
+tags: [frontend, ui, design]
 ---
 
 # Padrões de UI/UX • Daxgo Feeds
 
 Guia de padronização visual aplicado nas telas do sistema, com foco em consistência e redução de poluição visual.
+
+:::tip Design System
+Este guia define o design system do Daxgo Feeds, baseado em Bootstrap 4 com customizações específicas.
+:::
 
 ## Objetivo da padronização
 

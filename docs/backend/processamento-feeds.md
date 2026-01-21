@@ -1,10 +1,17 @@
 ---
 title: Pipeline de Processamento de Feeds
+description: Fluxo completo de importação, processamento, otimização e publicação de feeds
+keywords: [feeds, pipeline, processamento, importação, otimização]
+tags: [backend, feeds, pipeline]
 ---
 
 # Pipeline de Processamento de Feeds
 
 Fluxo completo de importação, processamento, otimização e publicação de feeds de produtos.
+
+:::tip Arquitetura em camadas
+O pipeline é dividido em componentes independentes e reutilizáveis, facilitando manutenção e testes.
+:::
 
 ## Visão geral do pipeline
 

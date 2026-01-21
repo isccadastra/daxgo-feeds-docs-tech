@@ -1,10 +1,17 @@
 ---
 title: DynamoDB • Estrutura de dados
+description: Estrutura das tabelas DynamoDB - promoções, tokens OAuth e otimizações IA
+keywords: [dynamodb, nosql, promoções, oauth, tokens]
+tags: [infraestrutura, dynamodb, database]
 ---
 
 # DynamoDB • Estrutura de dados
 
 Armazenamento NoSQL usado para promoções, tokens OAuth2 e dados de otimizações de IA.
+
+:::info DynamoDB Local
+Em desenvolvimento, usamos DynamoDB Local. Em produção, AWS DynamoDB.
+:::
 
 ## Tabelas principais
 

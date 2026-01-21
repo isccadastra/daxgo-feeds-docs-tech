@@ -1,11 +1,18 @@
 ---
 title: Google Merchant
+description: Integração completa com Google Merchant Center via Content API
+keywords: [google merchant, content api, oauth2, shopping]
+tags: [integrações, google, merchant]
 ---
 
 # Integração com Google Merchant
 
 Integração via Content API for Shopping v2.1 usando OAuth2, tokens persistidos em DynamoDB
 e sincronização de promoções com Google Merchant Center.
+
+:::info Content API v2.1
+Utiliza a Google Shopping Content API v2.1 com autenticação OAuth 2.0 para operações de produtos e promoções.
+:::
 
 ## Componentes principais
 

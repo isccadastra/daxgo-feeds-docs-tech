@@ -1,11 +1,18 @@
 ---
 title: S3/MinIO (armazenamento)
+description: Configuração e uso do MinIO para armazenamento compatível com S3
+keywords: [s3, minio, armazenamento, object storage]
+tags: [infraestrutura, s3, armazenamento]
 ---
 
 # S3/MinIO (armazenamento)
 
 O armazenamento local usa MinIO, compatível com S3, para arquivos de otimização
 e feeds publicados.
+
+:::tip MinIO vs S3
+MinIO é 100% compatível com a API S3 da AWS, permitindo alternar entre ambientes sem mudança de código.
+:::
 
 ## Estrutura de buckets
 

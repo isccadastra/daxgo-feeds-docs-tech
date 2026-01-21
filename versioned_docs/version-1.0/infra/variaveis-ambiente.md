@@ -1,10 +1,17 @@
 ---
 title: Variáveis de ambiente
+description: Referência completa de variáveis de ambiente do Daxgo Feeds
+keywords: [env, environment, configuração, variáveis]
+tags: [infraestrutura, configuração, env]
 ---
 
 # Variáveis de ambiente
 
 Lista completa de variáveis de ambiente necessárias para configuração do sistema.
+
+:::danger Segurança
+Nunca commite o arquivo `config/env-local.php` com credenciais reais. Use `.gitignore` para proteger dados sensíveis.
+:::
 
 ## Arquivo de configuração
 
@@ -17,71 +24,84 @@ return [
 ];
 ```
 
-## AWS Services
+## Credenciais AWS
+
+:::info Prefixo DAXGO_ENV_
+Todas as variáveis de ambiente do sistema usam o prefixo `DAXGO_ENV_` para evitar conflitos.
+:::
+
+### Credenciais principais
+
+```php title="Credenciais compartilhadas"
+'DAXGO_ENV_KEY' => 'admin',           // AWS Access Key ID
+'DAXGO_ENV_SECRET' => 'password',     // AWS Secret Access Key
+```
+
+:::note Uso compartilhado
+Estas credenciais são usadas para **todos os serviços AWS**: S3, DynamoDB, Lambda, SQS.
+:::
+
+## Endpoints locais (desenvolvimento)
+
+Apenas para ambiente `YII_ENV == 'local'`:
+
+```php title="config/env-local.php - Endpoints locais"
+'DAXGO_ENV_ENV_LOCAL_DYNAMO_ENDPOINT' => 'http://dynamodb-local:8000',
+'DAXGO_ENV_ENV_LOCAL_LAMBDA_ENDPOINT' => 'http://host.docker.internal:9555',
+'DAXGO_ENV_ENV_LOCAL_S3_ENDPOINT' => 'http://host.docker.internal:9666',
+```
+
+:::warning Host interno
+`host.docker.internal` permite que containers Docker acessem serviços rodando no host (como MinIO e LocalStack).
+:::
+
+## Serviços AWS
 
 ### S3/MinIO
 
 ```php
-'AWS_ACCESS_KEY_ID' => 'admin',
-'AWS_SECRET_ACCESS_KEY' => 'password',
-'AWS_S3_ENDPOINT' => 'http://host.docker.internal:9666',
-'AWS_S3_BUCKET' => 'daxgo',
-'AWS_S3_REGION' => 'us-east-1',
-'AWS_S3_USE_PATH_STYLE' => true, // Para MinIO local
+'DAXGO_ENV_FEEDS_S3_BUCKET' => 'daxgo',
+'DAXGO_ENV_FEEDS_S3_URL_PUBLISHED' => 'http://localhost:9666/minio/daxgo',
 ```
+
+**Buckets utilizados**:
+- `daxgo`: Bucket principal (feeds, JSONs)
+- `product-studio`: Templates e modelos
+- `product-studio-cdn`: Imagens geradas
 
 **Produção:**
 ```php
-'AWS_S3_ENDPOINT' => '', // Vazio para usar endpoint padrão AWS
-'AWS_S3_BUCKET' => 'daxgo-feeds-prod',
-'AWS_S3_REGION' => 'us-east-1',
-'AWS_S3_USE_PATH_STYLE' => false,
-```
-
-### DynamoDB
-
-```php
-'AWS_DYNAMODB_ACCESS_KEY' => 'dummy', // Local
-'AWS_DYNAMODB_SECRET_KEY' => 'dummy', // Local
-'AWS_DYNAMODB_REGION' => 'us-east-1',
-'AWS_DYNAMODB_ENDPOINT' => 'http://dynamodb-local-feeds:8000', // Local
-```
-
-**Produção:**
-```php
-'AWS_DYNAMODB_ACCESS_KEY' => '', // Usar IAM role
-'AWS_DYNAMODB_SECRET_KEY' => '', // Usar IAM role
-'AWS_DYNAMODB_ENDPOINT' => '', // Vazio para usar endpoint padrão
-```
-
-### Lambda
-
-```php
-'AWS_LAMBDA_ACCESS_KEY' => '',
-'AWS_LAMBDA_SECRET_KEY' => '',
-'AWS_LAMBDA_REGION' => 'us-east-1',
-'AWS_LAMBDA_FUNCTION_NAME' => 'feed-optimize',
-'AWS_LAMBDA_FUNCTION_NAME_IA' => 'feed-optimize-ia',
-'AWS_LAMBDA_FUNCTION_NAME_TIKTOK' => 'feed-tiktok-sync',
+'DAXGO_ENV_FEEDS_S3_BUCKET' => 'daxgo',
+'DAXGO_ENV_FEEDS_S3_URL_PUBLISHED' => 'https://s3.amazonaws.com/daxgo',
 ```
 
 ### SQS
 
 ```php
-'AWS_SQS_ACCESS_KEY' => '',
-'AWS_SQS_SECRET_KEY' => '',
-'AWS_SQS_REGION' => 'us-east-1',
-'AWS_SQS_QUEUE_URL' => 'https://sqs.us-east-1.amazonaws.com/123456789/feed-queue',
+'DAXGO_ENV_SQS_QUEUE_URL' => '',
 ```
 
-### CloudWatch
+:::note Opcional
+SQS é opcional. Deixe vazio se não estiver usando filas.
+:::
 
-```php
-'AWS_CLOUDWATCH_ACCESS_KEY' => '',
-'AWS_CLOUDWATCH_SECRET_KEY' => '',
-'AWS_CLOUDWATCH_REGION' => 'us-east-1',
-'AWS_CLOUDWATCH_NAMESPACE' => 'DaxgoFeeds',
-```
+### Lambda
+
+Configurado no component `Lambda.php`. Usa as mesmas credenciais (`DAXGO_ENV_KEY`, `DAXGO_ENV_SECRET`).
+
+**Funções disponíveis**: Ver [documentação de Lambda](./lambda-functions.md)
+
+### DynamoDB
+
+Usa endpoint local em desenvolvimento, AWS em produção.
+
+**Tabelas**:
+- `ssxml_client`: Clientes
+- `ssxml_feed`: Feeds
+- `ssxml_media`: Mídias
+- `ssxml_store`: Lojas (para integração LIA)
+- `ssxml_token`: Tokens OAuth2 Google
+- `ssxml_promotion`: Promoções Google Merchant
 
 ## Google Services
 
@@ -110,267 +130,266 @@ return [
 ### MySQL
 
 ```php
-'DB_HOST' => 'mysql-feeds',
-'DB_NAME' => 'feeds',
-'DB_USER' => 'admin',
-'DB_PASSWORD' => 'admin',
-'DB_PORT' => '3306',
+'DAXGO_ENV_FEEDS_MYSQL_HOST' => 'mysql',
+'DAXGO_ENV_FEEDS_MYSQL_PORT' => '3306',
+'DAXGO_ENV_FEEDS_MYSQL_DB' => 'feeds',
+'DAXGO_ENV_FEEDS_MYSQL_USER' => 'admin',
+'DAXGO_ENV_FEEDS_MYSQL_PASS' => 'admin',
 ```
 
 **Produção:**
 ```php
-'DB_HOST' => 'rds-endpoint.us-east-1.rds.amazonaws.com',
-'DB_NAME' => 'feeds_prod',
-'DB_USER' => 'admin',
-'DB_PASSWORD' => env('DB_PASSWORD'), // Usar secret manager
-'DB_PORT' => '3306',
+'DAXGO_ENV_FEEDS_MYSQL_HOST' => 'rds-endpoint.us-east-1.rds.amazonaws.com',
+'DAXGO_ENV_FEEDS_MYSQL_PORT' => '3306',
+'DAXGO_ENV_FEEDS_MYSQL_DB' => 'feeds',
+'DAXGO_ENV_FEEDS_MYSQL_USER' => 'admin',
+'DAXGO_ENV_FEEDS_MYSQL_PASS' => env('DB_PASSWORD'), // Usar secret manager
 ```
 
-## Application
+## Detecção de ambiente
 
-### Debug & Environment
+O sistema detecta o ambiente via constante `YII_ENV` definida em `web/index.php`:
+
+```php title="web/index.php"
+// Define ambiente
+defined('YII_ENV') or define('YII_ENV', 'prod');
+defined('YII_DEBUG') or define('YII_DEBUG', false);
+```
+
+**Valores possíveis**:
+- `local`: Desenvolvimento local com Docker
+- `dev`: Desenvolvimento em servidor
+- `prod`: Produção
+
+:::tip Endpoints locais
+Endpoints locais (DynamoDB, Lambda, S3) são usados **apenas** quando `YII_ENV == 'local'`.
+:::
+
+## Inteligência Artificial
+
+### OpenRouter (IA)
 
 ```php
-'YII_DEBUG' => true,
-'YII_ENV' => 'dev', // 'prod' para produção
+'DAXGO_ENV_FEEDS_IA_API_KEY' => '',      // Chave API OpenRouter
+'DAXGO_ENV_FEEDS_IA_API_HOST' => '',     // Host da API IA
 ```
 
-### URLs
-
-```php
-'BASE_URL' => 'http://localhost:9000',
-'FEED_URL_BASE' => 'http://localhost:9666/daxgo/feeds',
-```
-
-**Produção:**
-```php
-'BASE_URL' => 'https://feeds.daxgo.io',
-'FEED_URL_BASE' => 'https://cdn.daxgo.io/feeds',
-```
-
-### Cookies & Session
-
-```php
-'COOKIE_DOMAIN' => '.localhost',
-'SESSION_TIMEOUT' => 3600, // 1 hora
-```
-
-**Produção:**
-```php
-'COOKIE_DOMAIN' => '.daxgo.io',
-'SESSION_TIMEOUT' => 7200, // 2 horas
-```
-
-## Integrações
-
-### TikTok
-
-```php
-'TIKTOK_APP_KEY' => '',
-'TIKTOK_APP_SECRET' => '',
-'TIKTOK_OAUTH_REDIRECT_URI' => 'http://localhost:9000/tiktok/callback',
-```
-
-### Analytics
-
-```php
-'GOOGLE_ANALYTICS_ID' => 'UA-XXXXXXXXX-X',
-'GOOGLE_TAG_MANAGER_ID' => 'GTM-XXXXXX',
-```
+:::warning Custo
+OpenRouter é pago por uso. Configure limites de budget.
+:::
 
 ## Email
 
-### SMTP
+### SES (Amazon Simple Email Service)
 
 ```php
-'SMTP_HOST' => 'smtp.gmail.com',
-'SMTP_PORT' => 587,
-'SMTP_USERNAME' => 'noreply@daxgo.io',
-'SMTP_PASSWORD' => env('SMTP_PASSWORD'),
-'SMTP_ENCRYPTION' => 'tls',
-'SMTP_FROM_EMAIL' => 'noreply@daxgo.io',
-'SMTP_FROM_NAME' => 'Daxgo Feeds',
+'DAXGO_ENV_FEEDS_SES_HOST' => '',
+'DAXGO_ENV_FEEDS_SES_KEY' => '',
+'DAXGO_ENV_FEEDS_SES_USER' => '',
 ```
 
-## Logs
+:::note Opcional
+Configuração de email é opcional. Se vazio, emails não serão enviados.
+:::
 
-### Sentry (Erro tracking)
+## Como carregar variáveis
 
-```php
-'SENTRY_DSN' => 'https://xxxxx@sentry.io/xxxxx',
-'SENTRY_ENVIRONMENT' => 'dev', // 'prod' para produção
+### Em Components
+
+As variáveis são acessadas via `Yii::$app->params`:
+
+```php title="Exemplo: components/Lambda.php"
+$params = [
+    'credentials' => [
+        'key' => Yii::$app->params['DAXGO_ENV_KEY'],
+        'secret' => Yii::$app->params['DAXGO_ENV_SECRET']
+    ],
+    'region' => 'us-east-1',
+    'version' => 'latest'
+];
 ```
 
-### CloudWatch Logs
+### Em Controllers
 
-```php
-'CLOUDWATCH_LOGS_GROUP' => '/aws/elasticbeanstalk/daxgo-feeds',
-'CLOUDWATCH_LOGS_STREAM' => 'i-xxxxxxxxx',
+```php title="Exemplo: controllers/FeedController.php"
+$s3Bucket = Yii::$app->params['DAXGO_ENV_FEEDS_S3_BUCKET'];
+$s3Url = Yii::$app->params['DAXGO_ENV_FEEDS_S3_URL_PUBLISHED'];
 ```
 
-## Performance
+### Carregar env-local.php
 
-### Cache
+O arquivo é carregado em `config/web.php`:
 
-```php
-'CACHE_DRIVER' => 'redis', // 'file' para local
-'REDIS_HOST' => 'redis',
-'REDIS_PORT' => 6379,
-'REDIS_DATABASE' => 0,
-```
-
-### Queue
-
-```php
-'QUEUE_DRIVER' => 'sqs', // 'sync' para local
-```
-
-## Segurança
-
-### Encryption
-
-```php
-'APP_KEY' => 'base64:xxxxxxxxxxxxxxxxxxxxxx',
-'ENCRYPTION_KEY' => 'xxxxxxxxxxxxxxxxxxxxxx',
-```
-
-### JWT
-
-```php
-'JWT_SECRET' => 'xxxxxxxxxxxxxxxxxxxxxx',
-'JWT_TTL' => 3600, // 1 hora
-```
-
-## Feature Flags
-
-```php
-'FEATURE_AI_CATALOG' => true,
-'FEATURE_TIKTOK' => false,
-'FEATURE_PRODUCT_STUDIO' => false,
-'FEATURE_ANALYTICS_V2' => true,
-```
-
-## Limites e Timeouts
-
-```php
-'MAX_FEED_SIZE_MB' => 500,
-'MAX_PRODUCTS_PER_FEED' => 100000,
-'FEED_IMPORT_TIMEOUT' => 600, // 10 minutos
-'LAMBDA_TIMEOUT' => 300, // 5 minutos
-'API_RATE_LIMIT' => 60, // requisições por minuto
+```php title="config/web.php"
+$config = [
+    'params' => require(__DIR__ . '/env-local.php'),
+];
 ```
 
 ## Configuração por ambiente
 
 ### Development (Local)
 
-```php
+```php title="config/env-local.php - Completo"
+<?php
 return [
-    'YII_ENV' => 'dev',
-    'YII_DEBUG' => true,
-    'BASE_URL' => 'http://localhost:9000',
-    'AWS_S3_ENDPOINT' => 'http://host.docker.internal:9666',
-    'AWS_DYNAMODB_ENDPOINT' => 'http://dynamodb-local-feeds:8000',
-    'GOOGLE_MERCHANT_SANDBOX' => true,
+    // Credenciais AWS
+    'DAXGO_ENV_KEY' => 'admin',
+    'DAXGO_ENV_SECRET' => 'password',
+    
+    // Endpoints locais
+    'DAXGO_ENV_ENV_LOCAL_DYNAMO_ENDPOINT' => 'http://dynamodb-local:8000',
+    'DAXGO_ENV_ENV_LOCAL_LAMBDA_ENDPOINT' => 'http://host.docker.internal:9555',
+    'DAXGO_ENV_ENV_LOCAL_S3_ENDPOINT' => 'http://host.docker.internal:9666',
+    
+    // S3
+    'DAXGO_ENV_FEEDS_S3_BUCKET' => 'daxgo',
+    'DAXGO_ENV_FEEDS_S3_URL_PUBLISHED' => 'http://localhost:9666/minio/daxgo',
+    
+    // SQS
+    'DAXGO_ENV_SQS_QUEUE_URL' => '',
+    
+    // Email
+    'DAXGO_ENV_FEEDS_SES_HOST' => '',
+    'DAXGO_ENV_FEEDS_SES_KEY' => '',
+    'DAXGO_ENV_FEEDS_SES_USER' => '',
+    
+    // MySQL
+    'DAXGO_ENV_FEEDS_MYSQL_HOST' => 'mysql',
+    'DAXGO_ENV_FEEDS_MYSQL_PORT' => '3306',
+    'DAXGO_ENV_FEEDS_MYSQL_DB' => 'feeds',
+    'DAXGO_ENV_FEEDS_MYSQL_USER' => 'admin',
+    'DAXGO_ENV_FEEDS_MYSQL_PASS' => 'admin',
+    
+    // IA
+    'DAXGO_ENV_FEEDS_IA_API_KEY' => '',
+    'DAXGO_ENV_FEEDS_IA_API_HOST' => '',
+    
+    // Google OAuth2
+    'DAXGO_ENV_GOOGLE_OAUTH2_CLIENT_ID' => 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+    'DAXGO_ENV_GOOGLE_OAUTH2_CLIENT_SECRET' => 'YOUR_CLIENT_SECRET',
+    'DAXGO_ENV_GOOGLE_OAUTH2_REDIRECT_URI' => 'http://localhost:9000/oauth2/google/callback',
 ];
 ```
 
-### Staging
-
-```php
-return [
-    'YII_ENV' => 'staging',
-    'YII_DEBUG' => false,
-    'BASE_URL' => 'https://staging.feeds.daxgo.io',
-    'AWS_S3_BUCKET' => 'daxgo-feeds-staging',
-    'GOOGLE_MERCHANT_SANDBOX' => true,
-];
-```
+:::danger Credenciais obrigatórias
+Configure suas próprias credenciais Google OAuth2. Obtenha em: https://console.cloud.google.com/apis/credentials
+:::
 
 ### Production
 
-```php
-return [
-    'YII_ENV' => 'prod',
-    'YII_DEBUG' => false,
-    'BASE_URL' => 'https://feeds.daxgo.io',
-    'AWS_S3_BUCKET' => 'daxgo-feeds-prod',
-    'GOOGLE_MERCHANT_SANDBOX' => false,
-    'SENTRY_ENVIRONMENT' => 'production',
-];
+```php title="Variáveis de ambiente - Produção"
+// Credenciais AWS (usar IAM Role ou Secrets Manager)
+DAXGO_ENV_KEY=YOUR_AWS_ACCESS_KEY
+DAXGO_ENV_SECRET=YOUR_AWS_SECRET_KEY
+
+// S3
+DAXGO_ENV_FEEDS_S3_BUCKET=daxgo
+DAXGO_ENV_FEEDS_S3_URL_PUBLISHED=https://s3.amazonaws.com/daxgo
+
+// MySQL
+DAXGO_ENV_FEEDS_MYSQL_HOST=feeds-prod.cluster-xxx.us-east-1.rds.amazonaws.com
+DAXGO_ENV_FEEDS_MYSQL_PORT=3306
+DAXGO_ENV_FEEDS_MYSQL_DB=feeds
+DAXGO_ENV_FEEDS_MYSQL_USER=admin
+DAXGO_ENV_FEEDS_MYSQL_PASS=<from-secrets-manager>
+
+// IA
+DAXGO_ENV_FEEDS_IA_API_KEY=<openrouter-key>
+DAXGO_ENV_FEEDS_IA_API_HOST=https://openrouter.ai/api/v1
+
+// SES
+DAXGO_ENV_FEEDS_SES_HOST=email-smtp.us-east-1.amazonaws.com
+DAXGO_ENV_FEEDS_SES_KEY=<ses-smtp-key>
+DAXGO_ENV_FEEDS_SES_USER=<ses-smtp-user>
+
+// Google OAuth2
+DAXGO_ENV_GOOGLE_OAUTH2_CLIENT_ID=<prod-client-id>.apps.googleusercontent.com
+DAXGO_ENV_GOOGLE_OAUTH2_CLIENT_SECRET=<prod-secret>
+DAXGO_ENV_GOOGLE_OAUTH2_REDIRECT_URI=https://feeds.daxgo.io/oauth2/google/callback
 ```
 
-## Arquivo .env (alternativa)
+## Resumo de variáveis obrigatórias
 
-Se usar `.env` em vez de `env-local.php`:
+### Mínimo para rodar local
 
-```env
-# Application
-YII_DEBUG=true
-YII_ENV=dev
-BASE_URL=http://localhost:9000
+```php title="Essenciais para desenvolvimento"
+// AWS
+'DAXGO_ENV_KEY' => 'admin',
+'DAXGO_ENV_SECRET' => 'password',
 
-# Database
-DB_HOST=mysql-feeds
-DB_NAME=feeds
-DB_USER=admin
-DB_PASSWORD=admin
+// Endpoints locais
+'DAXGO_ENV_ENV_LOCAL_DYNAMO_ENDPOINT' => 'http://dynamodb-local:8000',
+'DAXGO_ENV_ENV_LOCAL_LAMBDA_ENDPOINT' => 'http://host.docker.internal:9555',
+'DAXGO_ENV_ENV_LOCAL_S3_ENDPOINT' => 'http://host.docker.internal:9666',
 
-# AWS
-AWS_ACCESS_KEY_ID=admin
-AWS_SECRET_ACCESS_KEY=password
-AWS_S3_ENDPOINT=http://host.docker.internal:9666
-AWS_S3_BUCKET=daxgo
-AWS_DYNAMODB_ENDPOINT=http://dynamodb-local-feeds:8000
+// S3
+'DAXGO_ENV_FEEDS_S3_BUCKET' => 'daxgo',
 
-# Google
-GOOGLE_OAUTH2_CLIENT_ID=xxxxx.apps.googleusercontent.com
-GOOGLE_OAUTH2_CLIENT_SECRET=GOCSPX-xxxxx
-GOOGLE_MERCHANT_SANDBOX=true
+// MySQL
+'DAXGO_ENV_FEEDS_MYSQL_HOST' => 'mysql',
+'DAXGO_ENV_FEEDS_MYSQL_PORT' => '3306',
+'DAXGO_ENV_FEEDS_MYSQL_DB' => 'feeds',
+'DAXGO_ENV_FEEDS_MYSQL_USER' => 'admin',
+'DAXGO_ENV_FEEDS_MYSQL_PASS' => 'admin',
 ```
 
-## Carregar no Yii2
+### Opcionais (features específicas)
 
-**config/web.php:**
-```php
-$config = [
-    'components' => [
-        'S3' => [
-            'class' => 'app\components\S3',
-            'credentials' => [
-                'key' => getenv('AWS_ACCESS_KEY_ID'),
-                'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
-            ],
-            'region' => getenv('AWS_S3_REGION'),
-            'version' => 'latest',
-            'endpoint' => getenv('AWS_S3_ENDPOINT'),
-            'use_path_style_endpoint' => true,
-        ],
-    ],
-];
+```php title="Apenas se usar a feature"
+// Inteligência Artificial
+'DAXGO_ENV_FEEDS_IA_API_KEY' => '<openrouter-key>',
+'DAXGO_ENV_FEEDS_IA_API_HOST' => 'https://openrouter.ai/api/v1',
+
+// Email (SES)
+'DAXGO_ENV_FEEDS_SES_HOST' => '<ses-host>',
+'DAXGO_ENV_FEEDS_SES_KEY' => '<ses-key>',
+'DAXGO_ENV_FEEDS_SES_USER' => '<ses-user>',
+
+// Google OAuth2 (Google Merchant, Analytics)
+'DAXGO_ENV_GOOGLE_OAUTH2_CLIENT_ID' => '<client-id>',
+'DAXGO_ENV_GOOGLE_OAUTH2_CLIENT_SECRET' => '<client-secret>',
+'DAXGO_ENV_GOOGLE_OAUTH2_REDIRECT_URI' => 'http://localhost:9000/oauth2/google/callback',
+
+// SQS
+'DAXGO_ENV_SQS_QUEUE_URL' => '<queue-url>',
 ```
 
-## Variáveis via SSM Parameter Store (AWS)
+## Boas práticas
 
-**Produção recomendada:**
-```bash
-aws ssm put-parameter \
-  --name "/daxgo-feeds/prod/db-password" \
-  --value "senha-segura" \
-  --type "SecureString"
+:::tip Segurança
+1. **Nunca commite** `config/env-local.php` com credenciais reais
+2. Use `.gitignore` para proteger o arquivo
+3. Em produção, use **AWS Secrets Manager** ou **Systems Manager Parameter Store**
+4. Rotacione credenciais periodicamente
+5. Use IAM Roles sempre que possível (evita hardcoded credentials)
+:::
 
-aws ssm put-parameter \
-  --name "/daxgo-feeds/prod/google-oauth-secret" \
-  --value "GOCSPX-xxxxx" \
-  --type "SecureString"
-```
+:::warning Endpoints locais
+Variáveis `DAXGO_ENV_ENV_LOCAL_*` são **ignoradas** em produção. Elas só são usadas quando `YII_ENV == 'local'`.
+:::
 
-**Carregar no código:**
-```php
-$dbPassword = $ssm->getParameter([
-    'Name' => '/daxgo-feeds/prod/db-password',
-    'WithDecryption' => true
-])['Parameter']['Value'];
-```
+## Troubleshooting
+
+### Erro: "Access key not found"
+
+**Causa**: Variáveis `DAXGO_ENV_KEY` ou `DAXGO_ENV_SECRET` não definidas
+
+**Solução**: Verificar se `config/env-local.php` existe e está sendo carregado
+
+### Erro: "Connection refused" (DynamoDB/Lambda/S3)
+
+**Causa**: Endpoints locais não estão rodando ou configurados incorretamente
+
+**Solução**:
+1. Verificar se Docker Compose está rodando (`docker-compose ps`)
+2. Verificar se MinIO está em `http://localhost:9666`
+3. Verificar se DynamoDB Local está em `http://localhost:8000`
+
+### Erro: "Table does not exist" (DynamoDB)
+
+**Causa**: Tabelas não foram criadas no DynamoDB Local
+
+**Solução**: Executar migrations ou criar tabelas manualmente
 
 

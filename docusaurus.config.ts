@@ -45,8 +45,8 @@ const config: Config = {
           lastVersion: '1.0',
           versions: {
             current: {
-              label: 'Em Desenvolvimento',
-              path: 'next',
+              label: 'dev',
+              path: 'dev',
             },
           },
         },

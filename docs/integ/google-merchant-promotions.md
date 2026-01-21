@@ -1,10 +1,17 @@
 ---
 title: Módulo de Promoções (Google Merchant)
+description: Gestão completa de promoções com sincronização Google Merchant Center
+keywords: [promoções, google merchant, shopping, content api]
+tags: [integrações, google, promoções]
 ---
 
 # Módulo de Promoções • Google Merchant
 
 Módulo completo de gestão de promoções com sincronização bilateral com Google Merchant Center via Content API for Shopping v2.1.
+
+:::tip Sincronização Bilateral
+O módulo permite criar promoções localmente e sincronizá-las com o Google, ou importar promoções existentes do Google Merchant.
+:::
 
 ## Visão geral técnica
 
