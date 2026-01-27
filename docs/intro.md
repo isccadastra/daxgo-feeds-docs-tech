@@ -34,8 +34,7 @@ Esta é a **documentação técnica** destinada a desenvolvedores. Para document
 - [**Variáveis de Ambiente**](./infra/variaveis-ambiente) - Configurações completas
 
 ### Integrações
-- [**Google Merchant**](./integ/google-merchant) - Content API for Shopping
-- [**Promoções Google**](./integ/google-merchant-promotions) - Módulo de promoções
+- [**Google Merchant Center**](./integ/google-merchant) - Content API for Shopping e Promoções
 - [**TikTok Shop**](./integ/tiktok) - Sincronização de produtos
 
 ### Features
