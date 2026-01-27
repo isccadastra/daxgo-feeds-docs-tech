@@ -1,11 +1,11 @@
 ---
-title: Modelos de Dados Principais
+title: Modelos de Dados
 description: Documentação completa dos models do Yii2 - entidades, relacionamentos e responsabilidades
 keywords: [models, yii2, active record, entidades, relacionamentos]
 tags: [backend, models, database]
 ---
 
-# Modelos de Dados Principais
+# Modelos de Dados
 
 Entidades core do sistema com relacionamentos e responsabilidades.
 
