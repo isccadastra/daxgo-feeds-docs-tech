@@ -36,6 +36,7 @@ Esta é a **documentação técnica** destinada a desenvolvedores. Para document
 ### Integrações
 - [**Google Merchant Center**](./integ/google-merchant) - Content API for Shopping e Promoções
 - [**TikTok Shop**](./integ/tiktok) - Sincronização de produtos
+- [**LIA (Magazine Luiza)**](./integ/lia) - Integração VTEX e geração de XML
 
 ### Features
 - [**Catálogo Inteligente (IA)**](./features/catalogo-inteligente) - Otimizações com IA
