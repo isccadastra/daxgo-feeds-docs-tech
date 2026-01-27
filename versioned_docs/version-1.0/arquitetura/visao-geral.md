@@ -1,11 +1,11 @@
 ---
-title: Visão geral da arquitetura
+title: Visão geral
 description: Arquitetura completa do sistema Daxgo Feeds - componentes, fluxos e integrações
 keywords: [arquitetura, yii2, vue, s3, dynamodb, mysql, google merchant]
 tags: [arquitetura, backend, frontend, infraestrutura]
 ---
 
-# Visão geral da arquitetura
+# Visão geral
 
 O Daxgo Feeds é uma plataforma completa de gerenciamento e otimização de feeds de produtos,
 composta por um backend em Yii2 (PHP 8.1+) com múltiplas integrações externas e módulos

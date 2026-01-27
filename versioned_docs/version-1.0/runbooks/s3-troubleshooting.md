@@ -1,10 +1,17 @@
 ---
 title: Troubleshooting S3/MinIO
+description: Guia de resolução de problemas comuns com S3/MinIO
+keywords: [troubleshooting, s3, minio, debug, erros]
+tags: [runbooks, troubleshooting, s3]
 ---
 
 # Troubleshooting S3/MinIO
 
 Runbook para erros comuns de S3/MinIO durante customização de mídia.
+
+:::warning Problemas Comuns
+A maioria dos erros S3 ocorre por bucket inexistente, credenciais incorretas ou arquivos não encontrados.
+:::
 
 ## Sintoma: 404 ao customizar mídia
 

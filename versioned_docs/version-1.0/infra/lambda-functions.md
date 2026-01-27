@@ -1,490 +1,467 @@
 ---
-title: Lambda Functions
-description: Funções Lambda AWS para processamento assíncrono de feeds e integrações
-keywords: [lambda, aws, serverless, processamento assíncrono]
-tags: [infraestrutura, lambda, aws]
+title: Funções Lambda
+description: Documentação completa das funções AWS Lambda do Daxgo Feeds
+keywords: [lambda, aws, serverless, otimização, processamento]
+tags: [infra, lambda, aws]
 ---
 
-# Lambda Functions
+# Funções Lambda AWS
 
-O sistema Daxgo Feeds utiliza múltiplas funções Lambda AWS para processamento assíncrono e escalável de feeds, integrações e geração de conteúdo.
+As funções Lambda são componentes serverless responsáveis por processamento pesado, integrações assíncronas e operações que exigem escalabilidade automática.
 
-:::info Produção
-Todas as funções Lambda listadas são utilizadas em **produção** e foram extraídas do código-fonte do projeto master.
+:::info Ambiente
+- **Produção**: Funções AWS Lambda em `us-east-1`
+- **Desenvolvimento**: LocalStack ou emulador rodando em `http://host.docker.internal:9555`
 :::
 
-## Categorias de funções
+## ssxml_product_optimize_PRODUCAO
 
-- **Otimização de Feeds**: Processamento de produtos com regras e filtros
-- **Product Studio**: Geração de imagens personalizadas
-- **Inteligência Artificial**: Categorização e otimização com IA
-- **TikTok Shop**: 11 funções para integração completa
-- **LIA (Magazine Luiza)**: Geração de XML e sincronização de estoque
+**Função principal de otimização de feeds**. Processa produtos aplicando regras de transformação, filtros, busca, ordenação e paginação. É invocada pelo componente [`FeedRunOptimizeOnLambda`](../backend/componentes#feedrunoptimizeonlambda).
 
-## Funções de otimização
+### Informações gerais
 
-### ssxml_product_optimize_PRODUCAO
+| Propriedade | Valor |
+|-------------|-------|
+| **Nome** | `ssxml_product_optimize_PRODUCAO` |
+| **Runtime** | Node.js (AWS SDK v2) |
+| **Timeout** | 5-10 minutos (configurável) |
+| **Memória** | 512MB-1GB (recomendado) |
+| **Trigger** | Invocação síncrona via SDK PHP |
 
-**Component:** `FeedRunOptimizeOnLambda.php`
+### Payload de entrada
 
-**Responsabilidade:** Processar produtos aplicando regras, filtros e otimizações
-
-**Invocação:**
-```php
-$lambda = new FeedRunOptimizeOnLambda(
-    $clientHash, 
-    $feedHash, 
-    $mediaHash,
-    $file,
-    $products,
-    $rules,
-    $filters
-);
-$result = $lambda->optimizeProducts();
+```json
+{
+  "client_hash": "abc123...",
+  "feed_hash": "def456...",
+  "media_hash": "ghi789...",
+  "file": "temp",
+  "products": "[]",
+  "rules": [...],
+  "filters": [...],
+  "qtd_per_page": 10,
+  "page": 0,
+  "search_by": "title",
+  "search_value": "camiseta",
+  "order_by": "price",
+  "order_type": "asc",
+  "publish_products": 0,
+  "titles_created": [...],
+  "titles": [...],
+  "mediaIa": "facebook",
+  "feedIa": "feed_abc123"
+}
 ```
 
-**Payload:**
-```php
-[
-    'client_hash' => $clientHash,
-    'feed_hash' => $feedHash,
-    'media_hash' => $mediaHash,
-    'file' => 'feed.xml',
-    'products' => '[]',
-    'rules' => [...],
-    'filters' => [...],
-    'qtd_per_page' => 10,
-    'page' => 0,
-    'search_by' => 'title',
-    'search_value' => '',
-    'order_by' => 'price',
-    'order_type' => 'asc',
-    'publish_products' => 0,
-    'titles_created' => [],
-    'titles' => [],
-    'mediaIa' => 'off',
-    'feedIa' => 'off'
-]
+#### Parâmetros obrigatórios
+
+- `client_hash`: Hash do cliente (identificador único)
+- `feed_hash`: Hash do feed
+- `media_hash`: Hash da mídia (Google, Facebook, TikTok, etc.)
+- `products`: Array de produtos (string JSON) - pode ser vazio `"[]"`
+- `rules`: Array de regras de transformação
+- `filters`: Array de filtros (categoria, preço, estoque)
+
+#### Parâmetros opcionais
+
+- `file`: Nome do arquivo no S3 (default: `temp`)
+- `qtd_per_page`: Itens por página (default: `10`)
+- `page`: Página atual (default: `0`)
+- `search_by`: Campo de busca (ex: `title`, `sku`)
+- `search_value`: Valor da busca
+- `order_by`: Campo de ordenação (ex: `price`, `title`)
+- `order_type`: Tipo de ordenação (`asc`, `desc`)
+- `publish_products`: Flag de publicação (`0` = preview, `1` = publicar)
+- `titles_created`: Colunas customizadas criadas pelo usuário
+- `titles`: Títulos de todas as colunas disponíveis
+- `mediaIa`: Mídia para Catálogo Inteligente (ex: `facebook`, `google`, `general`)
+- `feedIa`: Feed para Catálogo Inteligente (ex: `feed_abc123`)
+
+### Fluxo de execução
+
+<div style={{textAlign: 'center'}}>
+
+```mermaid
+flowchart TD
+  A[Lambda invocada] --> B[Valida parâmetros obrigatórios]
+  B --> C[Conecta AWS: S3 + DynamoDB]
+  C --> D[Carrega JSON do S3<br/>client_feed_media_file.json]
+  D --> E[Processa produtos editados<br/>runProducts]
+  E --> F[Enriquece: Analytics<br/>getOptimizeData]
+  F --> G[Enriquece: Grade Furada<br/>getGradeFuradaData]
+  G --> H[Enriquece: IA<br/>getIaData]
+  H --> I[Enriquece: Product Studio<br/>getProductStudioData]
+  I --> J[Enriquece: Extra Data<br/>getExtraData]
+  J --> K[Salva JSON enriquecido no S3<br/>_temp.json]
+  K --> L[Aplica regras de transformação<br/>runRules]
+  L --> M[Aplica filtros<br/>runFilters]
+  M --> N{Busca ativa?}
+  N -- Sim --> O[Filtra por busca<br/>runSearch]
+  N -- Não --> P[Filtra unpublished]
+  O --> Q[Aplica ordenação<br/>runOrder]
+  P --> Q
+  Q --> R[Enriquece: TikTok<br/>getTikTokCategoryAndBrand]
+  R --> S{Catálogo Inteligente?}
+  S -- Sim --> T[Aplica otimizações IA<br/>getCatalogIaData]
+  S -- Não --> U{Publicar?}
+  T --> U
+  U -- Sim --> V[Salva produtos ativos<br/>runSave]
+  V --> W[Grava _published.json no S3]
+  U -- Não --> X[Aplica paginação<br/>arrayChunk]
+  W --> X
+  X --> Y[Retorna resposta JSON]
 ```
 
-:::tip Paginação
-Suporta paginação com `qtd_per_page` e `page` para processar grandes volumes de produtos.
-:::
+</div>
 
----
-
-## Funções de Product Studio
-
-### ssxml_product_studio-STEP5-generate-img-front
-
-**Component:** `ProductStudioProcessImg.php`
-
-**Responsabilidade:** Geração de imagens personalizadas para campanhas
-
-**Invocação:**
-```php
-$processor = new ProductStudioProcessImg(
-    $jsonImgContent,
-    $clientHash,
-    $s3Key,
-    $s3Bucket,
-    $pathToImgInS3,
-    $nameImg
-);
-$result = $processor->processImg();
-```
-
-**Payload:**
-```php
-[
-    'jsonImgContent' => {...},  // Configuração Fabric.js
-    'clientHash' => $clientHash,
-    's3Key' => $s3Key,
-    's3Bucket' => 'product-studio',
-    'pathToImgInS3' => 'models-product-studio/client/img/',
-    'nameImg' => 'produto-123.png'
-]
-```
-
----
-
-### ssxml_product_studio-STEP6-filter-campaing-products
-
-**Component:** `ProductStudioCampaingProducts.php`
-
-**Responsabilidade:** Filtrar produtos para campanhas
-
-**Invocação:**
-```php
-$campaing = new ProductStudioCampaingProducts();
-$result = $campaing->filterProducts(
-    $clientHash,
-    $feedHash,
-    $midiaHash,
-    $filters,
-    $campaingHash,
-    $publish
-);
-```
-
-**Invocação Assíncrona:** Quando `$publish = 1`, usa `InvocationType: 'Event'`
-
----
-
-## Funções de Inteligência Artificial
-
-### feeds-dados-IA-CATEGORIA-orquestrador
-
-**Component:** `LambdaIA.php`
-
-**Responsabilidade:** Orquestração de categorização automática de produtos
-
-**Invocação:**
-```php
-$lambdaIA = new LambdaIA();
-$result = $lambdaIA->dispatchGetIaCategories(
-    $clientHash,
-    $productCategory
-);
-```
-
-**Payload:**
-```php
-[
-    'client_hash' => $clientHash,
-    'product_categorie' => 'Roupas > Camisetas'
-]
-```
-
-**Tipo de invocação:** `Event` (assíncrono)
-
----
-
-## Funções de integração TikTok Shop
-
-O sistema possui 11 funções Lambda dedicadas à integração completa com TikTok Shop.
-
-**Component:** `LambdaTiktok.php`
+### Etapas detalhadas
 
 <details>
-<summary>Ver todas as 11 funções TikTok</summary>
+<summary><strong>1. Validação e conexão AWS</strong></summary>
 
-### integracao-tik-tok-PRODUTOS-lista-produtos
+```javascript
+// Valida parâmetros obrigatórios
+if (exports.clientHash === undefined) callback('Cliente Hash é obrigatório');
+if (exports.feedHash === undefined) callback('Feed Hash é obrigatório');
+if (exports.mediaHash === undefined) callback('Mídia Hash é obrigatório');
 
-```php
-$lambdaTiktok->dispatchGenerateProducts($clientHash);
+// Conecta S3 e DynamoDB
+connectToAWS();
 ```
 
-**Payload:**
-```php
-[
-    'type' => 'triggerPrepareProductList',
-    'client_hash' => $clientHash,
-    'url' => $feedLink,
-    'warehouse_id' => $warehouseId
-]
-```
-
----
-
-### integracao-tik-tok-PRODUTOS-compara-xml
-
-```php
-$lambdaTiktok->dispatchUpdateProducts($clientHash, $oldXml, $newXml);
-```
-
-**Payload:**
-```php
-[
-    'client_hash' => $clientHash,
-    'antigo_xml' => 'feed_old.xml',
-    'novo_xml' => 'feed_new.xml'
-]
-```
-
----
-
-### integracao-tik-tok-VTEX-PRODUTO-ADDITIONAL-IMAGES-XML
-
-```php
-$lambdaTiktok->dispatchSearchImagesVtex($clientHash);
-```
-
-**Payload:**
-```php
-[
-    'type' => 'triggerSyncProductImagesFromXmlNew',
-    'client_hash' => $clientHash
-]
-```
-
----
-
-### integracao-tik-tok-BRANDS-VTEX
-
-```php
-$lambdaTiktok->dispatchGenerateBrands($clientHash);
-```
-
----
-
-### integracao-tik-tok-PRECO-VTEX-monta-lista-sku
-
-```php
-$lambdaTiktok->dispatchPrepareListPrice($clientHash);
-```
-
----
-
-### integracao-tik-tok-ESTOQUE-VTEX-atualizacao-estoque
-
-```php
-$lambdaTiktok->dispatchPrepareStock($clientHash);
-```
-
----
-
-### integracao-tik-tok-PEDIDOS-novo-pedido-TTK
-
-```php
-$lambdaTiktok->dispatchSendOrder($clientHash, $orderId);
-```
-
----
-
-### integracao-tik-tok-BUSCA-PEDIDOS-TESTE
-
-```php
-$lambdaTiktok->dispatchGetOrder($clientHash);
-```
-
----
-
-### integracao-tik-tok-ORDERHOOK-MANAGEMENT
-
-```php
-$lambdaTiktok->dispatchGenerateOrderHook($clientHash);
-```
-
----
-
-### integracao-tik-tok-SHIPPING-PACKAGE
-
-```php
-$lambdaTiktok->dispatchPackage($clientHash, $orderId, $packageId);
-```
-
-**Tipo de invocação:** `RequestResponse` (síncrono)
+:::warning Credenciais hardcoded
+O código atual contém credenciais AWS hardcoded. **Isso deve ser migrado para variáveis de ambiente ou IAM roles** antes de produção.
+:::
 
 </details>
 
-:::note Tipos de invocação
-- **Event**: Assíncrono, não espera resposta (maioria das funções TikTok)
-- **RequestResponse**: Síncrono, espera resposta (apenas `SHIPPING-PACKAGE`)
-:::
+<details>
+<summary><strong>2. Carregamento do JSON base</strong></summary>
 
----
-
-## Funções de integração LIA (Magazine Luiza)
-
-**Component:** `LambdaLia.php`
-
-### integracao_LIA_VTEX_generate_XML
-
-```php
-$lambdaLia = new LambdaLia();
-$result = $lambdaLia->generateLiaXml(
-    $clientHash,
-    $storeCode,
-    $xmlUrl
-);
+```javascript
+let fileName = `${clientHash}_${feedHash}_${mediaHash}_${file}.json`;
+var conteudo = await getProductsInS3(fileName);
+exports.productsDefault = conteudo.products;
 ```
 
-**Responsabilidade:** Gerar XML de produtos para LIA a partir de dados VTEX
+**Bucket**: `smartxml`  
+**Key**: `json-to-optimize/{client}_{feed}_{media}_temp.json`
 
----
+</details>
 
-### integracao_LIA_VTEX_create_inventory
+<details>
+<summary><strong>3. Processamento de produtos editados</strong></summary>
 
-```php
-$lambdaLia->prepareInventory(
-    $clientHash,
-    $storeCode,
-    $vtexAppKey,
-    $vtexWarehouseId,
-    $vtexAccount,
-    $vtexToken
-);
+A função `runProducts()` sincroniza alterações manuais do usuário:
+- Status do produto (`active`, `inactive`, `new_active`, `new_inactive`)
+- Edições manuais de campos (`ssxml_manual_set`)
+- Criação/remoção de colunas customizadas
+
+</details>
+
+<details>
+<summary><strong>4. Enriquecimento de dados</strong></summary>
+
+A Lambda busca dados complementares de múltiplas fontes:
+
+#### 4.1. Analytics (getOptimizeData)
+
+**Fonte**: `s3://smartxml/json-to-optimize/{client}_optimize_data.json`
+
+**Campos adicionados**:
+- `optimize_conversion_rate`: Taxa de conversão
+- `optimize_views`: Visualizações
+- `optimize_adds_to_cart`: Adições ao carrinho
+- `optimize_checkouts`: Checkouts iniciados
+- `optimize_orders`: Pedidos finalizados
+- `optimize_values_sum`: Receita total
+
+#### 4.2. Grade Furada (getGradeFuradaData)
+
+**Fonte**: `s3://smartxml-grade-furada/{client}/{client}_{feed}_{media}_grade_furada.json`
+
+**Campos adicionados**:
+- `grade_furada`: Indica se o produto tem estoque/grade incompleta
+
+#### 4.3. IA - Dados Gerais (getIaData)
+
+**Fonte**: `s3://smartxml-data-ia/{client}/dataIa.json`
+
+**Campos adicionados**:
+- `ia_field_sku`: SKU processado pela IA
+- `ia_field_gtin`: GTIN/EAN identificado
+- `ia_field_brand`: Marca extraída pela IA
+- `ia_field_color`: Cor do produto
+- `ia_field_model`: Modelo identificado
+- `ia_field_gender`: Gênero (masculino/feminino/unissex)
+- `ia_field_voltage`: Voltagem (para eletroeletrônicos)
+- `ia_field_category`: Categoria sugerida
+- `ia_field_optimized_name`: Nome otimizado pela IA
+- `ia_field_taxonomy`: Taxonomia do Google sugerida
+
+#### 4.4. Product Studio (getProductStudioData)
+
+**Fonte**: `s3://product-studio-cdn/processed-campaings/{client}_{feed}_{media}_dataImgCdn.json`
+
+**Campos adicionados**:
+- `product_studio_img_cdn`: URL da imagem personalizada gerada
+
+#### 4.5. Extra Data (getExtraData)
+
+**Fonte**: `s3://smartxml/extra-data/{client}/{client}_{feed}_{media}_extra_data.json`
+
+**Campos adicionados**:
+- `api_price`: Preço atualizado via API externa
+
+</details>
+
+<details>
+<summary><strong>5. Aplicação de regras</strong></summary>
+
+A função `runRules()` aplica transformações nos campos:
+
+| Função | Descrição |
+|--------|-----------|
+| `replaceSys` | Substitui texto (ex: "P" → "Pequeno") |
+| `removeSys` | Remove texto/padrão |
+| `cortarSys` | Trunca texto (limita caracteres) |
+| `adicionarSys` | Adiciona prefixo/sufixo |
+| `adicionarColSys` | Adiciona valor de outra coluna |
+| `removerHTMLSys` | Remove tags HTML |
+| `descontoSys` | Aplica desconto percentual |
+| `mascaraSys` | Aplica máscara (ex: telefone, CEP) |
+| `priMSys` | Primeira letra maiúscula |
+| `todMSys` | Tudo maiúsculo |
+| `todMnSys` | Tudo minúsculo |
+
+**Condições**: Regras podem ter condições (ex: aplicar apenas se `category = Eletrônicos`).
+
+</details>
+
+<details>
+<summary><strong>6. Aplicação de filtros</strong></summary>
+
+A função `runFilters()` filtra produtos baseado em condições:
+
+| Código | Condição | Exemplo |
+|--------|----------|---------|
+| `0` | Igual | `category = "Calçados"` |
+| `1` | Diferente | `brand ≠ "Nike"` |
+| `2` | Contém | `title contém "feminino"` |
+| `3` | Não contém | `description não contém "promoção"` |
+| `4` | Maior que | `price > 100` |
+| `5` | Menor que | `stock < 10` |
+
+**Comportamento**: Produtos que não passam nos filtros são marcados em `ssxml_unpublish` e não aparecem no feed final.
+
+</details>
+
+<details>
+<summary><strong>7. Busca e ordenação</strong></summary>
+
+#### Busca (runSearch)
+
+Suporta:
+- **Busca simples**: pesquisa em colunas especificadas ou em todas
+- **Busca múltipla**: separador `|` (ex: `"nike|adidas|puma"`)
+- **Case-insensitive**: busca em minúsculas
+
+#### Ordenação (runOrder)
+
+- Detecta automaticamente se campo é numérico ou texto
+- Suporta `asc` e `desc`
+- Usa `lodash.orderBy` para ordenação eficiente
+
+</details>
+
+<details>
+<summary><strong>8. Enriquecimento TikTok</strong></summary>
+
+A função `getTikTokCategoryAndBrand()` adiciona:
+
+**DynamoDB**: `ssxml_tik_tok_taxonomy` e `ssxml_tik_tok_brands`
+
+**Campos adicionados**:
+- `tik_tok_category_desc`: Categoria TikTok
+- `tik_tok_category_id`: ID da categoria TikTok
+- `tik_tok_brand_id`: ID da marca TikTok
+- `additional_image_1` a `additional_image_7`: Imagens extras
+
+</details>
+
+<details>
+<summary><strong>9. Catálogo Inteligente</strong></summary>
+
+Se `feedIa != 'off'` e `mediaIa != 'off'`, aplica otimizações de IA por mídia:
+
+**DynamoDB**: `ssxml_ia_product_optimizations`
+
+**Lógica**:
+1. Carrega otimizações do feed específico
+2. Combina otimizações `general` + `{mediaHash}` (mídia específica sobrescreve geral)
+3. Mescla dados otimizados nos produtos
+
+**Campos dinâmicos** (dependem do feed):
+- Títulos otimizados por mídia
+- Descrições otimizadas
+- Categorias sugeridas
+- Atributos customizados
+
+</details>
+
+<details>
+<summary><strong>10. Publicação</strong></summary>
+
+Se `publish_products = 1`:
+
+1. Filtra apenas produtos ativos (`ssxml_status = 'active'` ou `'new_active'`)
+2. Salva em `{client}_{feed}_{media}_temp_published.json`
+3. Atualiza timestamp de publicação no backend
+
+</details>
+
+<details>
+<summary><strong>11. Paginação e resposta</strong></summary>
+
+```javascript
+var totalPages = runTotalPages(qtd_per_page, exports.productsFiltered);
+exports.productsFiltered = arrayChunk(qtd_per_page, page, exports.productsFiltered);
+
+var response = {
+  'products': exports.productsFiltered,
+  'totalPages': totalPages,
+  'rules': exports.rules,
+  'filters': exports.filters,
+  'page': page,
+  'publish_products': publish_products,
+  'titles': exports.titles,
+  'titles_created': exports.titles_created
+};
+
+callback(null, response);
 ```
 
-**Payload:**
-```php
-[
-    'type' => 'triggerPrepareInventory',
-    'client_hash' => $clientHash,
-    'store_code' => 'VTEX',
-    'vtex_app_key' => $appKey,
-    'vtex_warehouse_id' => '1_1',
-    'vtex_account' => 'account-name',
-    'vtex_token' => $token,
-    'page' => 1,
-    'pageSize' => 500
-]
+</details>
+
+### Performance e otimizações
+
+#### Consultas em lote
+
+A Lambda usa paginação no DynamoDB para evitar timeouts:
+
+```javascript
+let items = [];
+let ExclusiveStartKey = undefined;
+
+do {
+  const result = await exports.DynamoDB.query(params).promise();
+  items = items.concat(result.Items);
+  ExclusiveStartKey = result.LastEvaluatedKey;
+} while (ExclusiveStartKey);
 ```
 
-**Responsabilidade:** Criar e sincronizar inventário VTEX com LIA
+#### Cache de dados
 
----
+- **Imagens TikTok**: usa `Map` para lookup O(1) por SKU
+- **Catálogo IA**: indexa por SKU para acesso direto
 
-## Configuração
+#### Timeout management
 
-### Component Lambda
-
-**Arquivo:** `components/Lambda.php`
-
-```php title="Lambda.php"
-class Lambda extends LambdaClient
-{
-    public function connect()
-    {
-        $params = [
-            'credentials' => [
-                'key' => Yii::$app->params['DAXGO_ENV_KEY'],
-                'secret' => Yii::$app->params['DAXGO_ENV_SECRET']
-            ],
-            'region' => 'us-east-1',
-            'version' => 'latest'
-        ];
-
-        // Ambiente local: usa endpoint local
-        if (YII_ENV == 'local') {
-            $params['endpoint'] = Yii::$app->params['DAXGO_ENV_ENV_LOCAL_LAMBDA_ENDPOINT'];
-            $params['use_path_style_endpoint'] = true;
-            $params['signature_version'] = 'v4';
-            $params['debug'] = true;
-        }
-
-        return LambdaClient::factory($params);
-    }
-}
-```
+- **Sem limites de memória/tempo no PHP**: `ini_set("memory_limit", -1)`
+- **Lambda**: timeout configurado para 5-10 minutos (feeds grandes)
 
 ### Variáveis de ambiente
 
-```php title="config/env-local.php"
-// Credenciais AWS
-'DAXGO_ENV_KEY' => 'admin',
-'DAXGO_ENV_SECRET' => 'password',
+:::warning Migração necessária
+Credenciais AWS devem ser movidas para variáveis de ambiente:
 
-// Endpoint Lambda local (apenas desenvolvimento)
-'DAXGO_ENV_ENV_LOCAL_LAMBDA_ENDPOINT' => 'http://host.docker.internal:9555',
+```javascript
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION || 'us-east-1'
+});
 ```
-
-:::warning Endpoint local
-Em ambiente local (`YII_ENV == 'local'`), o sistema usa LocalStack ou emulador Lambda rodando em `http://host.docker.internal:9555`.
 :::
 
-### Ambientes
+### Dependências
 
-| Ambiente | `YII_ENV` | Endpoint Lambda | Debug |
-|----------|-----------|-----------------|-------|
-| **Local** | `local` | `http://host.docker.internal:9555` | `true` |
-| **Dev** | `dev` | AWS Lambda (us-east-1) | `false` |
-| **Prod** | `prod` | AWS Lambda (us-east-1) | `false` |
+- `aws-sdk`: SDK AWS v2
+- `lodash.min.js`: Utilitários (ordenação, manipulação de arrays)
+- `functions.js`: Funções de transformação customizadas
 
-### Invocação síncrona
+### Logs e debug
 
-```php title="Exemplo de invocação"
-// Conectar ao Lambda
-$Lambda = Yii::$app->Lambda->connect();
+A Lambda usa `console.log()` para logging:
+- Erros de busca de arquivos S3
+- Status de enriquecimento (Analytics, Grade Furada, IA)
+- Processamento de Catálogo Inteligente
 
-// Invocar função
-$response = $Lambda->invoke([
-    'FunctionName' => 'ssxml_product_optimize_PRODUCAO',
-    'Payload' => json_encode($payload)
-]);
+**CloudWatch Logs**: `/aws/lambda/ssxml_product_optimize_PRODUCAO`
 
-// Processar resposta
-$result = json_decode($response['Payload']->getContents(), true);
-```
+### Tratamento de erros
 
-### Invocação assíncrona
+A Lambda captura erros em operações críticas:
 
-```php title="Invocação Event (não aguarda resposta)"
-$Lambda->invoke([
-    'FunctionName' => 'integracao-tik-tok-PRODUTOS-lista-produtos',
-    'InvocationType' => 'Event',  // Assíncrono
-    'Payload' => json_encode($payload)
-]);
-```
-
-:::info Tipos de invocação
-- **Padrão (RequestResponse)**: Aguarda resposta da Lambda
-- **Event**: Dispara e esquece (assíncrono)
-- **DryRun**: Valida parâmetros sem executar
-:::
-
-### Sufixo de ambiente (dev)
-
-```php title="Lambda.php - getSuffixFunctionName()"
-public function getSuffixFunctionName()
-{
-    if (YII_ENV == 'dev') {
-        return '_dev';
-    }
-    return '';
+```javascript
+try {
+  const data = await exports.S3.getObject({...}).promise();
+  // processa dados
+} catch (err) {
+  console.log("Erro ao buscar o arquivo:", err);
+  // continua execução (dados opcionais)
 }
 ```
 
-:::note Nomenclatura
-Em ambiente de **dev**, algumas funções podem ter sufixo `_dev`. Exemplo: `ssxml_product_optimize_PRODUCAO_dev`
+:::info Resiliência
+Enriquecimentos (Analytics, IA, Product Studio) são **opcionais**. Se falharem, a Lambda continua processando com os dados disponíveis.
 :::
 
-## Monitoramento
+### Exemplo de invocação (PHP)
 
-### CloudWatch Logs
+```php
+$lambda = Yii::$app->Lambda->connect();
 
-```bash
-# Ver logs
-aws logs tail /aws/lambda/feed-optimize --follow
+$response = $lambda->invoke([
+    'FunctionName' => 'ssxml_product_optimize_PRODUCAO',
+    'Payload' => json_encode([
+        'client_hash' => $clientHash,
+        'feed_hash' => $feedHash,
+        'media_hash' => $mediaHash,
+        'file' => 'temp',
+        'products' => '[]',
+        'rules' => $rules,
+        'filters' => $filters,
+        'qtd_per_page' => 10,
+        'page' => 0,
+        'search_by' => '',
+        'search_value' => '',
+        'order_by' => 'title',
+        'order_type' => 'asc',
+        'publish_products' => 0,
+        'titles_created' => $titlesCreated,
+        'titles' => $titles,
+        'mediaIa' => 'facebook',
+        'feedIa' => 'feed_abc123'
+    ])
+]);
 
-# Filtrar erros
-aws logs filter-pattern '/aws/lambda/feed-optimize' --filter-pattern 'ERROR'
+$data = json_decode($response['Payload']->getContents(), true);
 ```
 
-### Métricas
+### Melhorias futuras
 
-- Invocations
-- Errors
-- Duration
-- Throttles
-- ConcurrentExecutions
+- [ ] Migrar credenciais AWS para IAM roles ou variáveis de ambiente
+- [ ] Adicionar retry automático em caso de falha de S3/DynamoDB
+- [ ] Implementar cache Redis para dados de taxonomia/marcas TikTok
+- [ ] Métricas customizadas (CloudWatch Metrics) para monitoramento
+- [ ] Migrar para AWS SDK v3 (Node.js modular)
+- [ ] Adicionar validação de schema no payload (JSON Schema)
 
-## Troubleshooting
+---
 
-### Timeout
-
-**Causa:** Processamento demora mais que o limite configurado
-
-**Solução:**
-- Aumentar timeout da função
-- Processar em lotes menores
-- Otimizar código
-
-### Out of Memory
-
-**Causa:** Memória insuficiente para processar dados
-
-**Solução:**
-- Aumentar memory da função
-- Processar em lotes
-
-### Throttling
-
-**Causa:** Muitas invocações simultâneas
-
-**Solução:**
-- Aumentar concurrent executions limit
-- Implementar retry com backoff
-
-
+:::tip Documentação relacionada
+- [FeedRunOptimizeOnLambda](../backend/componentes#feedrunoptimizeonlambda) - Componente PHP que invoca esta Lambda
+- [Estrutura Yii2](../backend/estrutura-yii2) - Controllers e fluxos
+- [Processamento de Feeds](../backend/processamento-feeds) - Lógica de otimização
+:::

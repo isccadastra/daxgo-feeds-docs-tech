@@ -1,10 +1,17 @@
 ---
 title: Xdebug
+description: Guia completo de configuração e uso do Xdebug para debug PHP
+keywords: [xdebug, debug, php, vscode, desenvolvimento]
+tags: [runbooks, debug, xdebug]
 ---
 
 # Xdebug
 
 Este runbook descreve como usar o Xdebug no backend `feeds-upgrade`.
+
+:::tip IDE Support
+Xdebug funciona com VSCode, Cursor, PHPStorm e outros IDEs que suportam DBGp protocol.
+:::
 
 ## Pré-requisitos
 

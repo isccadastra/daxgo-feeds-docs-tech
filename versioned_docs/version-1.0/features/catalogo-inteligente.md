@@ -1,10 +1,17 @@
 ---
 title: Catálogo Inteligente (IA)
+description: Otimizações automáticas de produtos usando IA via OpenRouter
+keywords: [ia, ai, inteligência artificial, otimização, openrouter]
+tags: [features, ia, otimização]
 ---
 
 # Catálogo Inteligente (IA)
 
 Otimizações automáticas de produtos usando inteligência artificial.
+
+:::info Powered by OpenRouter
+Utiliza a plataforma OpenRouter para acessar múltiplos modelos de IA (GPT-4, Claude, etc) de forma unificada.
+:::
 
 ## Funcionalidades
 

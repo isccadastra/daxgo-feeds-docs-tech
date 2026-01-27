@@ -1,10 +1,17 @@
 ---
 title: Ambiente local
+description: Configuração e uso do ambiente Docker local do Daxgo Feeds
+keywords: [docker, docker-compose, ambiente local, desenvolvimento]
+tags: [infraestrutura, docker, ambiente]
 ---
 
 # Ambiente local
 
 O ambiente local do backend é orquestrado via Docker Compose no repo `feeds-upgrade`.
+
+:::info Docker Required
+É necessário ter Docker e Docker Compose instalados para executar o ambiente local.
+:::
 
 ## Serviços principais
 

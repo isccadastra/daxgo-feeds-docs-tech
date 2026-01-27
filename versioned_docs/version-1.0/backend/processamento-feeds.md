@@ -1,12 +1,21 @@
 ---
 title: Pipeline de Processamento de Feeds
+description: Fluxo completo de importação, processamento, otimização e publicação de feeds
+keywords: [feeds, pipeline, processamento, importação, otimização]
+tags: [backend, feeds, pipeline]
 ---
 
 # Pipeline de Processamento de Feeds
 
 Fluxo completo de importação, processamento, otimização e publicação de feeds de produtos.
 
+:::tip Arquitetura em camadas
+O pipeline é dividido em componentes independentes e reutilizáveis, facilitando manutenção e testes.
+:::
+
 ## Visão geral do pipeline
+
+<div style={{textAlign: 'center'}}>
 
 ```mermaid
 flowchart TD
@@ -23,458 +32,266 @@ flowchart TD
     K --> L[Feed Final<br/>XML/CSV]
 ```
 
-## Componentes principais
+</div>
 
-### 1. FeedImporter
+## Etapas da Pipeline
 
-**Arquivo:** `components/FeedImporter.php`
+:::info Componentes detalhados
+Para detalhes sobre cada componente, consulte a [documentação de componentes](./componentes.md).
+:::
 
-**Responsabilidades:**
-- Baixar feed de origem (HTTP, FTP, arquivo local)
-- Detectar tipo de arquivo (XML, CSV, ZIP, TAR)
-- Descompactar se necessário
-- Validar estrutura básica
+### 1. Importação (FeedImporter + FileParser)
 
-**Métodos principais:**
-```php
-public function import($sFeedUrl, $sFileType)
-public function downloadFile($sUrl)
-public function validateFeedStructure()
+**Entrada**: URL do feed de origem (XML/CSV/ZIP)  
+**Saída**: Array de produtos normalizados
+
+**Processos**:
+1. Download do arquivo de origem
+2. Detecção automática de formato e encoding
+3. Descompactação (se necessário)
+4. Parsing (streaming para arquivos grandes)
+5. Validação de estrutura básica
+6. Mapeamento de campos para padrão interno
+
+**Formatos suportados**: XML, CSV, ZIP, TAR, XZ
+
+### 2. Preparação (FeedFileToOptimize)
+
+**Entrada**: Produtos normalizados  
+**Saída**: JSON no S3 (`{hash}.json`)
+
+**Customizações aplicadas**:
+- **Manual Set**: Valores editados na UI sobrescrevem valores do feed
+- **Unpublish**: Campos marcados para não publicar
+- **Google Sheets**: Integra dados de planilhas externas (por SKU)
+- **Custom Labels**: `custom_label1` a `custom_label4` para segmentação
+- **Taxonomia Google**: Mapeia categorias do cliente para categorias Google
+- **Tags de URL**: Adiciona/remove parâmetros UTM
+
+### 3. Otimização (FeedRunOptimizeOnLambda)
+
+**Entrada**: JSON do S3 + Regras + Filtros  
+**Saída**: JSON otimizado com produtos processados
+
+**Operações na Lambda**:
+- Aplicação de regras de transformação (replace, truncate, format, etc.)
+- Aplicação de filtros (remove produtos que não atendem critérios)
+- Busca e ordenação
+- Paginação
+- Enriquecimento com dados de Analytics, IA, TikTok, Product Studio
+
+### 4. Publicação (FeedSaveProductsPublished + FeedPublisher)
+
+**Entrada**: JSON otimizado  
+**Saída**: Feed final (XML/CSV) publicado no S3
+
+**Processos**:
+1. Copia `{hash}_temp.json` → `{hash}.json` no S3
+2. Persiste customizações no MySQL (`ProductPublish`)
+3. Gera feed final no formato da mídia (XML/CSV)
+4. Aplica template de mídia
+5. Upload para S3 com URL pública
+6. Atualiza timestamps de publicação
+
+## Fluxos principais
+
+### Fluxo 1: Importação agendada (Cron)
+
+<div style={{textAlign: 'center'}}>
+
+```mermaid
+sequenceDiagram
+    participant Cron
+    participant Controller as FeedController
+    participant Importer as FeedImporter
+    participant Parser as FileParser
+    participant S3
+    participant MySQL
+
+    Cron->>Controller: Verifica feeds agendados
+    Controller->>Importer: Download do feed de origem
+    Importer->>Parser: Parse XML/CSV
+    Parser->>Parser: Normaliza dados
+    Parser->>Importer: Array de produtos
+    Importer->>MySQL: Persiste produtos (Product)
+    Importer->>S3: Upload JSON base
+    Importer->>MySQL: Registra log (FeedImportHistory)
 ```
 
-**Tipos suportados:**
-- XML (padrão)
-- CSV
-- ZIP (extrai e processa primeiro arquivo)
-- TAR (extrai e processa primeiro arquivo)
+</div>
 
-### 2. FileParser
+**Frequência**: A cada 5 minutos (configurável em `cron.yaml`)  
+**Tabelas envolvidas**: `SchedulesToProcess`, `SchedulesProcesseds`, `FeedImportHistory`
 
-**Arquivo:** `components/FileParser.php`
+### Fluxo 2: Customização manual (UI)
 
-**Responsabilidades:**
-- Parsear XML/CSV para array PHP
-- Mapear campos do feed para campos internos
-- Normalizar dados
-- Lidar com encodings variados
+<div style={{textAlign: 'center'}}>
 
-**Métodos principais:**
-```php
-public function parseXml($sFilePath)
-public function parseCsv($sFilePath)
-public function mapFields($aProduct, $aFieldMapping)
+```mermaid
+sequenceDiagram
+    participant User as Usuário
+    participant Frontend as Frontend (Vue 2)
+    participant Controller as FeedController
+    participant S3
+    participant Lambda as FeedRunOptimizeOnLambda
+    participant MySQL
+
+    User->>Frontend: Acessa "Customizar Feed"
+    Frontend->>Controller: GET /feed/optimize
+    Controller->>Controller: Valida concorrência
+    Controller->>S3: Copia {hash}.json → {hash}_temp.json
+    Controller->>Frontend: Renderiza interface
+
+    User->>Frontend: Aplica regras/filtros
+    Frontend->>Controller: POST /feed/get-data-to-optimize
+    Controller->>Lambda: Processa produtos
+    Lambda->>S3: Lê {hash}_temp.json
+    Lambda-->>Controller: Produtos otimizados
+    Controller-->>Frontend: JSON com produtos
+
+    User->>Frontend: Clica "Publicar"
+    Frontend->>Controller: POST (publish_products=1)
+    Controller->>S3: Copia _temp.json → .json
+    Controller->>MySQL: Persiste customizações (ProductPublish)
+    Controller->>S3: Gera feed final (XML/CSV)
+    Controller-->>Frontend: URL do feed publicado
 ```
 
-**Características:**
-- Streaming para arquivos grandes (SXmlReader)
-- Suporte a múltiplos encodings (UTF-8, ISO-8859-1)
-- Validação de campos obrigatórios
+</div>
 
-### 3. FeedFileToOptimize
+### Fluxo 3: Enriquecimento de dados
 
-**Arquivo:** `components/FeedFileToOptimize.php`
+<div style={{textAlign: 'center'}}>
 
-**Responsabilidades:**
-- Preparar produtos para otimização
-- Aplicar customizações manuais (`ssxml_manual_set`)
-- Aplicar unpublish (`ssxml_unpublish`)
-- Integrar Google Sheets
-- Aplicar Custom Labels
-- Aplicar taxonomia do Google
-- Gerenciar tags de URL
-
-**Fluxo:**
-```php
-public function createFile($createExtraFile = false)
-{
-    $this->setDataPublished();      // Carrega customizações
-    $this->setTagAndTaxonomy();     // Aplica taxonomia
-    $this->saveFileS3($createExtraFile); // Salva no S3
-}
+```mermaid
+flowchart LR
+    A[Produtos Base] --> B[Analytics GA4]
+    A --> C[IA - Categorias/Taxonomia]
+    A --> D[TikTok - Taxonomia/Brands]
+    A --> E[Product Studio - Imagens]
+    A --> F[Google Sheets - Dados extras]
+    
+    B --> G[JSON Enriquecido]
+    C --> G
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> H[Lambda Optimize]
+    H --> I[Feed Final]
 ```
 
-**Customizações aplicadas:**
+</div>
 
-1. **Manual Set** (`ssxml_manual_set`):
-   - Valores editados manualmente na UI
-   - Sobrescreve valores originais do feed
-   - Armazenado como objeto JSON
+**Fontes de enriquecimento**:
+- **GA4**: Métricas de conversão, visualizações, receita
+- **IA**: Categorias, taxonomia Google, otimização de títulos
+- **TikTok**: Taxonomia TikTok, IDs de marcas
+- **Product Studio**: URLs de imagens personalizadas
+- **Google Sheets**: Dados customizados por SKU
 
-2. **Unpublish** (`ssxml_unpublish`):
-   - Campos marcados para não publicar
-   - Array de nomes de campos
-   - Remove campos do feed final
+## Regras e Filtros
 
-3. **Google Sheets**:
-   - Integra dados de planilhas externas
-   - Sobrescreve campos por SKU
-   - Processado via `FeedPublisher::getDataProductsByGoogleSheets()`
+### Tipos de Regras de Transformação
 
-4. **Custom Labels**:
-   - `custom_label1` a `custom_label4`
-   - Armazenado em `ProductsLabel`
-   - Usado para segmentação no Google Ads
+| Tipo | Descrição | Exemplo |
+|------|-----------|---------|
+| `substituir_texto` | Substitui texto | "iPhone" → "iPhone 15 Pro" |
+| `remover_texto` | Remove substring | Remove "Promoção:" dos títulos |
+| `cortar` | Trunca texto | Limita título a 150 caracteres |
+| `adicionar_texto` | Prefixo/sufixo | Adiciona "Novo - " no início |
+| `adicionar_coluna` | Copia valor de outra coluna | Copia `brand` para `custom_label1` |
+| `remover_tags_html` | Remove HTML | `<b>Produto</b>` → "Produto" |
+| `aplicar_desconto` | Desconto percentual | Reduz preço em 10% |
+| `mascara_moeda` | Formata moeda | `9990` → "R$ 99,90" |
+| `primeira_letra_maiuscula` | Capitalize | "produto" → "Produto" |
+| `todas_letras_maiusculas` | Uppercase | "produto" → "PRODUTO" |
+| `todas_letras_minusculas` | Lowercase | "PRODUTO" → "produto" |
 
-5. **Taxonomia do Google**:
-   - Mapeia categorias do cliente para categorias Google
-   - Configurável por cliente (`google_taxonomy`)
-   - Armazena categoria original em `client_category`
+**Condições**: Regras podem ter condições (ex: aplicar apenas se `brand = Apple`)
 
-6. **Tags de URL**:
-   - Remove/adiciona parâmetros UTM
-   - Configurado em `ClientMedia::url_tag`
+### Tipos de Filtros
 
-### 4. FeedRunOptimizeOnLambda
+| Condição | Descrição | Exemplo |
+|----------|-----------|---------|
+| `igual` | Igualdade exata | `category = "Eletrônicos"` |
+| `diferente` | Diferente de | `brand ≠ "Nike"` |
+| `contem` | Contém texto | `title contém "iPhone"` |
+| `nao_contem` | Não contém | `description não contém "usado"` |
+| `inicia_com` | Começa com | `sku inicia com "PRD-"` |
+| `termina_com` | Termina com | `sku termina com "-XL"` |
+| `maior_que` | Maior que | `price > 100` |
+| `menor_que` | Menor que | `stock < 10` |
+| `vazio` | Campo vazio | `description é vazio` |
+| `nao_vazio` | Campo preenchido | `image_url não é vazio` |
 
-**Arquivo:** `components/FeedRunOptimizeOnLambda.php`
+**Comportamento**: Produtos que não passam nos filtros são marcados como `ssxml_unpublish`
 
-**Responsabilidades:**
-- Invocar Lambda AWS para processamento assíncrono
-- Aplicar regras de transformação
-- Aplicar filtros
-- Processar grandes volumes
-
-**Payload enviado:**
-```json
-{
-  "client_hash": "...",
-  "feed_hash": "...",
-  "media_hash": "...",
-  "rules": [...],
-  "filters": [...],
-  "products": [...]
-}
-```
-
-**Lambda retorna:**
-- Produtos processados
-- Estatísticas de aplicação
-- Logs de erro
-
-### 5. FeedSaveProductsPublished
-
-**Arquivo:** `components/FeedSaveProductsPublished.php`
-
-**Responsabilidades:**
-- Salvar estado publicado dos produtos
-- Copiar arquivo temporário para definitivo
-- Persistir customizações no banco
-- Gerenciar versionamento
-
-**Métodos principais:**
-```php
-public function save($aProducts)
-public function copyTempFile()
-public function updateProductsPublished()
-```
-
-**Fluxo de publicação:**
-1. Valida produtos
-2. Copia `{hash}_temp.json` → `{hash}.json` no S3
-3. Persiste customizações em `ProductPublish`
-4. Atualiza timestamps
-
-### 6. FeedPublisher
-
-**Arquivo:** `models/FeedPublisher.php`
-
-**Responsabilidades:**
-- Gerar feed final (XML/CSV)
-- Aplicar template de mídia
-- Publicar no S3
-- Atualizar URLs
-
-**Métodos principais:**
-```php
-public function publishFeed()
-public function generateXml($aProducts)
-public function generateCsv($aProducts)
-public function uploadToS3($sFilePath)
-```
-
-**Formatos de saída:**
-- XML (padrão Google Shopping)
-- CSV (configurável)
-- Templates customizáveis por mídia
-
-## Fluxo de customização (UI → Backend)
-
-### 1. Usuário acessa "Customizar Feeds"
-
-```
-FeedController::actionOptimize()
-├─ Verifica se feed já está em otimização
-├─ Cria registro em FeedsInOptimization
-├─ Define cookies (client_hash, feed_hash, media_hash)
-├─ Copia arquivo S3: {hash}.json → {hash}_temp.json
-└─ Renderiza view com front-end Vue
-```
-
-### 2. Front-end carrega dados
-
-```
-POST /feed/get-data-to-optimize
-├─ FeedController::actionGetDataToOptimize()
-├─ Carrega produtos do S3 (_temp.json)
-├─ Carrega regras salvas (ClientMedia::rule)
-├─ Carrega filtros salvos (ClientMedia::filter)
-├─ Carrega fields mapping (ClientMedia::fields)
-├─ Aplica regras via Lambda (opcional)
-└─ Retorna JSON com produtos otimizados
-```
-
-**Payload da requisição:**
-```json
-{
-  "client_hash": "...",
-  "feed_hash": "...",
-  "media_hash": "...",
-  "qtd_per_page": 30,
-  "page": 0,
-  "search_by": "",
-  "search_value": "",
-  "order_by": "",
-  "order_type": "asc",
-  "products": [...],
-  "rules": [...],
-  "filters": [...],
-  "regrasFeed": {...},
-  "titles_created": [...],
-  "publish_products": 0,
-  "is_first_request": 1
-}
-```
-
-**Resposta:**
-```json
-{
-  "produtos_default": [...],
-  "regras": [...],
-  "filtros": [...],
-  "regrasFeed": {...},
-  "default_fields": {...},
-  "page": 0,
-  "titles": [...],
-  "titles_created": [...],
-  "totalPages": 100,
-  "totalProducts": 3000,
-  "media_name": "Facebook Ads"
-}
-```
-
-### 3. Usuário edita e publica
-
-```
-POST /feed/get-data-to-optimize (com publish_products=1)
-├─ Valida campos do feed (regrasFeed)
-├─ FeedSaveProductsPublished::save()
-├─ Copia S3: {hash}_temp.json → {hash}.json
-├─ Persiste customizações em ProductPublish
-├─ FeedPublisher::publishFeed()
-├─ Gera XML/CSV final
-├─ Upload para S3
-└─ Retorna feed_url
-```
-
-## Estrutura de dados
-
-### Produto no pipeline
-
-```php
-[
-  'sku' => '123456',
-  'name' => 'Produto Exemplo',
-  'description' => 'Descrição...',
-  'price' => '99.90',
-  'sale_price' => '79.90',
-  'url' => 'https://...',
-  'image_url' => 'https://...',
-  'category' => 'Eletrônicos > Celulares',
-  'brand' => 'Marca',
-  'availability' => 'in stock',
-  
-  // Campos internos do sistema
-  'ssxml_id' => 'abc123...',
-  'ssxml_status' => 'active',
-  'ssxml_manual_set' => (object)[...],
-  'ssxml_unpublish' => ['field1', 'field2'],
-  
-  // Google Taxonomy
-  'client_category' => 'Categoria Original',
-  
-  // Custom Labels
-  'custom_label1' => 'promo_black_friday',
-  'custom_label2' => 'estoque_baixo',
-  'custom_label3' => 'novo',
-  'custom_label4' => '',
-  
-  // Campos customizados
-  'custom_field_0' => 'valor_custom',
-]
-```
-
-### Regras aplicadas
-
-Estrutura de regra:
-```php
-[
-  'id' => 0,
-  'coluna' => 'name',
-  'regra' => 'substituir_texto',
-  'texto1' => 'iPhone',
-  'texto2' => 'iPhone 15 Pro',
-  'ativo' => true,
-  'condicoes' => [
-    [
-      'coluna' => 'brand',
-      'condicao' => 'igual',
-      'texto' => 'Apple'
-    ]
-  ]
-]
-```
-
-Tipos de regra:
-- `substituir_texto`: Replace
-- `remover_texto`: Remove substring
-- `cortar`: Truncate
-- `adicionar_texto`: Prepend/append
-- `adicionar_coluna`: Copiar valor de outra coluna
-- `remover_tags_html`: Strip HTML
-- `aplicar_desconto`: Aplicar % de desconto
-- `mascara_moeda`: Formatar como moeda
-- `primeira_letra_maiuscula`: Capitalize
-- `todas_letras_maiusculas`: Uppercase
-- `todas_letras_minusculas`: Lowercase
-
-### Filtros aplicados
-
-Estrutura de filtro:
-```php
-[
-  'id' => 0,
-  'coluna' => 'price',
-  'condicao' => 'maior_que',
-  'texto' => '100',
-  'exclude_empty' => true,
-  'active' => true,
-  'condicoes' => [...]
-]
-```
-
-Tipos de condição:
-- `igual`: Equals
-- `diferente`: Not equals
-- `contem`: Contains
-- `nao_contem`: Not contains
-- `inicia_com`: Starts with
-- `termina_com`: Ends with
-- `maior_que`: Greater than
-- `menor_que`: Less than
-- `vazio`: Is empty
-- `nao_vazio`: Is not empty
-
-## S3/MinIO (Armazenamento)
+## Armazenamento (S3/MinIO)
 
 ### Estrutura de arquivos
 
 ```
 bucket: daxgo/
-├── json-to-optimize/
-│   ├── {client_hash}_{feed_hash}_{media_hash}.json
-│   ├── {client_hash}_{feed_hash}_{media_hash}_temp.json
-│   └── {client_hash}_{feed_hash}_{media_hash}_background.json
-├── feeds/
-│   ├── {client_hash}_{feed_hash}_{media_hash}_{timestamp}.xml
-│   └── {client_hash}_{feed_hash}_{media_hash}_{timestamp}.csv
-└── temp/
-    └── (arquivos temporários)
+├── json-to-optimize/           # Arquivos JSON para otimização
+│   ├── {hash}.json             # Versão publicada (leitura)
+│   ├── {hash}_temp.json        # Versão em edição (escrita)
+│   └── {hash}_background.json  # Backup para processos em background
+├── feeds/                      # Feeds finais publicados
+│   ├── {hash}.xml              # Feed XML
+│   └── {hash}.csv              # Feed CSV
+└── temp/                       # Arquivos temporários de download
 ```
 
-### Versões dos arquivos
+:::tip Versões dos arquivos
+- **`.json`**: Versão publicada (usada em downloads agendados)
+- **`_temp.json`**: Versão em edição (usada durante customização na UI)
+- **`_background.json`**: Backup para processos assíncronos
+:::
 
-- **`.json`**: Versão publicada (leitura)
-- **`_temp.json`**: Versão em edição (escrita)
-- **`_background.json`**: Backup para processos em background
+## Agendamento (Cron Jobs)
 
-## Cron e agendamento
+**Frequência**: A cada 5 minutos (configurável em `cron.yaml`)
 
-**Arquivo:** `cron.yaml`
+**Fluxo**:
+1. Cron dispara `/cron.php`
+2. Verifica tabela `SchedulesToProcess` (feeds agendados)
+3. Para cada feed agendado: download → importação → processamento
+4. Marca como processado em `SchedulesProcesseds`
+5. Registra logs em `FeedImportHistory`
 
-```yaml
-version: 1
-cron:
- - name: "feed-schedule"
-   url: "/cron.php"
-   schedule: "*/5 * * * *"
-```
-
-**Processamento:**
-1. Verifica feeds agendados (`SchedulesToProcess`)
-2. Executa importação/atualização
-3. Marca como processado (`SchedulesProcesseds`)
-4. Registra logs em `FeedImportHistory`
+:::info Tabelas envolvidas
+- `SchedulesToProcess`: Feeds que devem ser processados
+- `SchedulesProcesseds`: Histórico de processamentos
+- `FeedImportHistory`: Logs detalhados de cada importação
+:::
 
 ## Troubleshooting
 
-### Feed não importa
+| Problema | Possíveis causas | Como investigar |
+|----------|------------------|-----------------|
+| **Feed não importa** | URL inacessível, timeout, formato inválido, encoding não suportado | Verificar `FeedImportHistory`, testar URL manualmente, validar estrutura XML/CSV |
+| **Customizações não aplicam** | Arquivo `_temp.json` não copiado, erro ao salvar `ProductPublish`, cache S3 | Verificar arquivos no S3, consultar tabela `product_publish` |
+| **Lambda timeout** | Muitos produtos (> 10k), regras complexas, timeout baixo | Aumentar timeout da Lambda, processar em lotes menores, otimizar regras |
+| **Produtos não aparecem no feed** | Filtros muito restritivos, `ssxml_unpublish` ativo | Revisar filtros aplicados, verificar campo `ssxml_unpublish` |
+| **Feed vazio após publicação** | Erro na geração XML/CSV, template de mídia inválido | Verificar logs do `FeedPublisher`, validar template da mídia |
 
-**Possíveis causas:**
-- URL inacessível
-- Timeout de download
-- Formato inválido
-- Encoding não suportado
-
-**Diagnóstico:**
-```php
-// Verificar logs
-tail -f runtime/logs/app.log | grep FeedImporter
-
-// Testar URL manualmente
-php yii feed-download/test-url <feed_url>
-```
-
-### Customizações não aplicam
-
-**Possíveis causas:**
-- Arquivo `_temp.json` não copiado
-- Erro ao salvar `ProductPublish`
-- Cache do S3
-
-**Diagnóstico:**
+:::tip Logs úteis
 ```bash
-# Verificar arquivos no S3
-docker exec -it minio_feeds_s3 mc ls local/daxgo/json-to-optimize/
+# Backend (Yii2)
+tail -f runtime/logs/app.log | grep -E "FeedImporter|FeedController"
 
-# Verificar registros no banco
-SELECT * FROM product_publish WHERE client_hash='...' AND feed_hash='...';
+# Lambda (CloudWatch)
+aws logs tail /aws/lambda/ssxml_product_optimize_PRODUCAO --follow
 ```
+:::
 
-### Lambda timeout
+---
 
-**Possíveis causas:**
-- Muitos produtos (> 10k)
-- Regras complexas
-- Timeout configurado baixo
-
-**Solução:**
-- Aumentar timeout do Lambda
-- Processar em lotes menores
-- Otimizar regras
-
-## Variáveis de ambiente relevantes
-
-```php
-// S3/MinIO
-'AWS_ACCESS_KEY_ID' => 'admin',
-'AWS_SECRET_ACCESS_KEY' => 'password',
-'AWS_S3_ENDPOINT' => 'http://host.docker.internal:9666',
-'AWS_S3_BUCKET' => 'daxgo',
-'AWS_S3_REGION' => 'us-east-1',
-
-// Lambda
-'AWS_LAMBDA_FUNCTION_NAME' => 'feed-optimize',
-'AWS_LAMBDA_REGION' => 'us-east-1',
-```
+:::info Documentação relacionada
+- [Componentes](./componentes.md) - Detalhes de cada componente da pipeline
+- [Estrutura Yii2](./estrutura-yii2.md) - Controllers e actions
+- [Lambda Functions](/docs/infra/lambda-functions) - Funções AWS Lambda
+:::
 
 

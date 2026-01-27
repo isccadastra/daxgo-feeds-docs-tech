@@ -18,13 +18,14 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Arquitetura',
-      items: ['arquitetura/visao-geral'],
+      items: ['arquitetura/visao-geral', 'arquitetura/servicos'],
     },
     {
       type: 'category',
       label: 'Backend (Yii2)',
       items: [
         'backend/estrutura-yii2',
+        'backend/componentes',
         'backend/modelos-dados',
         'backend/processamento-feeds',
         'backend/api-endpoints',
@@ -46,7 +47,6 @@ const sidebars: SidebarsConfig = {
       label: 'Integrações',
       items: [
         'integ/google-merchant',
-        'integ/google-merchant-promotions',
         'integ/tiktok',
       ],
     },

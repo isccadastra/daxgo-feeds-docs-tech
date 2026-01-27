@@ -1,11 +1,18 @@
 ---
 title: Customizar Feeds (Front-end)
+description: Documentação do módulo Vue 2 de otimização de feeds
+keywords: [vue, vue2, frontend, spa, webpack]
+tags: [frontend, vue, spa]
 ---
 
 # Customizar Feeds (Front-end)
 
-O módulo “Customizar Feeds” é um app Vue 2 que entrega a UI de otimização
+O módulo "Customizar Feeds" é um app Vue 2 que entrega a UI de otimização
 de feeds e é distribuído como assets estáticos no backend Yii2.
+
+:::info Arquitetura SPA
+Este é um Single Page Application (SPA) Vue 2 compilado e servido como assets estáticos pelo Yii2.
+:::
 
 ## Repositório
 
