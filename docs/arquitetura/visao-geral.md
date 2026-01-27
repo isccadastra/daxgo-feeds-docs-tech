@@ -44,7 +44,7 @@ front-end (Vue 2) distribuídos como assets estáticos.
 - **Google Analytics/Analytics Data**: métricas e relatórios de performance.
 - **Google Sheets**: importação de dados de planilhas para enriquecimento.
 - **TikTok Shop**: integração completa com TikTok via Lambda (produtos, pedidos, estoque, preços).
-- **LIA (Magazine Luiza)**: integração VTEX para geração de XML e sincronização de estoque.
+- **LIA VTEX**: integração com plataforma VTEX para geração de XML e sincronização de estoque.
 - **IA (OpenRouter)**: otimização automática de títulos, descrições e categorização de produtos.
 - **Product Studio**: geração de imagens personalizadas para campanhas de marketing.
 
@@ -183,7 +183,7 @@ O sistema utiliza AWS Lambda para processamento assíncrono e escalável de dive
 
 </details>
 
-### Integração LIA (Magazine Luiza)
+### Integração LIA VTEX
 
 | Função Lambda | Responsabilidade |
 |--------------|------------------|
