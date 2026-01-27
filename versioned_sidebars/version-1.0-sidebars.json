@@ -36,7 +36,8 @@
       "label": "Integrações",
       "items": [
         "integ/google-merchant",
-        "integ/tiktok"
+        "integ/tiktok",
+        "integ/lia"
       ]
     },
     {

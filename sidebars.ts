@@ -48,6 +48,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'integ/google-merchant',
         'integ/tiktok',
+        'integ/lia',
       ],
     },
     {
