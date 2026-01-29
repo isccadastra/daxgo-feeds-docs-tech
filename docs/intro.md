@@ -47,6 +47,17 @@ Esta é a **documentação técnica** destinada a desenvolvedores. Para document
 - [**Xdebug Setup**](./runbooks/xdebug) - Configuração de debug PHP
 - [**S3 Troubleshooting**](./runbooks/s3-troubleshooting) - Resolução de problemas
 
+### DaxGO Connect
+- [**Introdução**](./connect/introducao) - Visão geral do DaxGO Connect
+- [**Arquitetura**](./connect/arquitetura) - Componentes e fluxos de dados
+- [**Infraestrutura**](./connect/infraestrutura) - Recursos AWS e configurações
+- [**Deploy**](./connect/deploy) - Processos de deployment
+- [**Funcionalidades**](./connect/funcionalidades) - Integrações Responsys, RD Station e Salesforce
+
+:::info DaxGO Connect
+O **DaxGO Connect** é uma solução serverless para captura de dados de navegação e integração com ferramentas de marketing e CRM (Responsys, RD Station, Salesforce). Funciona de forma independente do Daxgo Feeds.
+:::
+
 ## Quick Start
 
 :::tip Pré-requisitos

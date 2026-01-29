@@ -76,6 +76,17 @@ const sidebars: SidebarsConfig = {
         'runbooks/s3-troubleshooting',
       ],
     },
+    {
+      type: 'category',
+      label: 'DaxGO Connect',
+      items: [
+        'connect/introducao',
+        'connect/arquitetura',
+        'connect/infraestrutura',
+        'connect/deploy',
+        'connect/funcionalidades',
+      ],
+    },
   ],
 };
 
